@@ -1,0 +1,35 @@
+name: Deploy to Azure Blob Storage
+
+on:
+  push:
+    branches: [main]
+
+env:
+  AZURE_STORAGE_ACCOUNT: chaihomelab
+  AZURE_STORAGE_CONTAINER: \$web
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build
+        run: npm run build
+      
+      - name: Deploy to Azure Blob
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_storage_connection_string: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+          azure_storage_account: ${{ env.AZURE_STORAGE_ACCOUNT }}
+          azure_storage_container: ${{ env.AZURE_STORAGE_CONTAINER }}
+          source: ./dist

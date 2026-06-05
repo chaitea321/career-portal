@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chaitanya Kumar | Terminal Portfolio</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="crt-overlay"></div>
+  <header class="terminal-header">
+    <h1 class="glitch" data-text="Chaitanya Kumar">Chaitanya Kumar</h1>
+    <p class="subtitle">Full Stack Engineer | Kubernetes Enthusiast</p>
+    <button id="audio-toggle" class="hidden-btn" aria-label="Toggle keystroke sounds">
+      <span class="audio-icon">🔇</span>
+    </button>
+  </header>
+  <main class="terminal-container">
+    <div id="terminal-output" class="terminal-output"></div>
+    <div class="command-line">
+      <span class="prompt">$</span>
+      <input type="text" id="command-input" class="terminal-input" autocomplete="off" autofocus>
+    </div>
+  </main>
+  <footer class="terminal-footer">
+    <p>Type <span class="command">help</span> to see available commands</p>
+  </footer>
+  <script type="module" src="js/terminal.js"></script>
+  <script type="module" src="js/command-parser.js"></script>
+  <script type="module" src="js/github-api.js"></script>
+  <script type="module" src="js/audio.js"></script>
+</body>
+</html>

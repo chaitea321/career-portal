@@ -1,0 +1,26 @@
+{
+  "name": "career-portal",
+  "version": "1.0.0",
+  "description": "FAANG-quality terminal-themed portfolio for chai-homelab.com",
+  "type": "module",
+  "scripts": {
+    "dev": "npx serve . -l 3000",
+    "build": "cp -r * ../dist/",
+    "lint": "eslint js/*.js --ext .js",
+    "test": "node --test tests/*.mjs",
+    "deploy": "npm run build && azure-storage-blob upload"
+  },
+  "keywords": [
+    "portfolio",
+    "terminal",
+    "synthwave",
+    "azure",
+    "cloudflare"
+  ],
+  "author": "Chaitanya Kumar <chaitea321>",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "serve": "^14.2.0"
+  }
+}
