@@ -27,9 +27,9 @@ class GitHubAPI {
       
       const filtered = filter
         ? repos.filter((repo) =>
-            repo.name.toLowerCase().includes(filter.toLowerCase()) ||
-            repo.description?.toLowerCase().includes(filter.toLowerCase())
-          )
+          repo.name.toLowerCase().includes(filter.toLowerCase()) ||
+          repo.description?.toLowerCase().includes(filter.toLowerCase())
+        )
         : repos;
       
       const projects = filtered.map(repo => ({
