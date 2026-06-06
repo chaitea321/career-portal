@@ -1,17 +1,21 @@
 class AudioController {
   constructor() {
     this.enabled = false;
-    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    this.audioContext = typeof window !== 'undefined' 
+      ? new (window.AudioContext || window.webkitAudioContext)() 
+      : null;
     this.keys = new Set();
     
     this.init();
   }
   
   init() {
-    const toggle = document.getElementById('audio-toggle');
-    
-    if (toggle) {
-      toggle.addEventListener('click', () => this.toggle());
+    if (typeof document !== 'undefined') {
+      const toggle = document.getElementById('audio-toggle');
+      
+      if (toggle) {
+        toggle.addEventListener('click', () => this.toggle());
+      }
     }
     
     this.loadKeystrokeSounds();
@@ -55,15 +59,20 @@ class AudioController {
   
   toggle() {
     this.enabled = !this.enabled;
-    const icon = document.querySelector('.audio-icon');
-    
-    if (this.enabled) {
-      this.audioContext.resume();
-      icon.textContent = '🔊';
-      document.body.classList.add('audio-enabled');
-    } else {
-      icon.textContent = '🔇';
-      document.body.classList.remove('audio-enabled');
+    if (typeof document !== 'undefined') {
+      const icon = document.querySelector('.audio-icon');
+      
+      if (icon) {
+        icon.textContent = this.enabled ? '🔊' : '🔇';
+      }
+      
+      if (this.enabled && this.audioContext) {
+        this.audioContext.resume();
+      }
+      
+      if (typeof document !== 'undefined') {
+        document.body?.classList.toggle('audio-enabled', this.enabled);
+      }
     }
     
     this.savePreference();
@@ -74,11 +83,16 @@ class AudioController {
   }
   
   loadPreference() {
-    const saved = localStorage.getItem('portfolio-audio-enabled');
-    if (saved === 'true') {
-      this.enabled = true;
-      document.querySelector('.audio-icon').textContent = '🔊';
-      document.body.classList.add('audio-enabled');
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('portfolio-audio-enabled');
+      if (saved === 'true') {
+        this.enabled = true;
+        if (typeof document !== 'undefined') {
+          const icon = document.querySelector('.audio-icon');
+          if (icon) icon.textContent = '🔊';
+          document.body?.classList.add('audio-enabled');
+        }
+      }
     }
   }
   

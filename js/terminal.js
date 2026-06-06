@@ -1,7 +1,7 @@
 class Terminal {
   constructor() {
-    this.output = document.getElementById('terminal-output');
-    this.input = document.getElementById('command-input');
+    this.output = typeof document !== 'undefined' ? document.getElementById('terminal-output') : null;
+    this.input = typeof document !== 'undefined' ? document.getElementById('command-input') : null;
     this.history = [];
     this.historyIndex = -1;
     this.commandHistory = ['help', 'projects', 'skills', 'about', 'contact'];
@@ -10,7 +10,9 @@ class Terminal {
   }
   
   init() {
-    this.output.innerHTML = '';
+    if (this.output) {
+      this.output.innerHTML = '';
+    }
     this.typewriterEffect(
       '> Welcome to Chaitanya Kumar\'s portfolio terminal v1.0.0\n',
       () => this.typewriterEffect('> Type "help" to see available commands\n', () => this.bindEvents())
@@ -18,9 +20,13 @@ class Terminal {
   }
   
   bindEvents() {
-    this.input.addEventListener('keydown', (e) => this.handleInput(e));
-    this.input.addEventListener('focus', () => this.input.scrollIntoView({ behavior: 'smooth' }));
-    window.addEventListener('resize', () => this.scrollToBottom());
+    if (typeof document !== 'undefined') {
+      if (this.input) {
+        this.input.addEventListener('keydown', (e) => this.handleInput(e));
+        this.input.addEventListener('focus', () => this.input.scrollIntoView({ behavior: 'smooth' }));
+      }
+      window.addEventListener('resize', () => this.scrollToBottom());
+    }
   }
   
   handleInput(e) {
@@ -56,6 +62,7 @@ class Terminal {
   }
   
   displayCommand(command) {
+    if (typeof document === 'undefined' || !this.output) return;
     const line = document.createElement('div');
     line.className = 'output-line command';
     line.innerHTML = `<span class="prompt">$</span> ${command}`;
@@ -100,6 +107,8 @@ class Terminal {
   showProjects(filter = '') {
     this.log('\n=== GITHUB PROJECTS ===\n', 'info');
     
+    if (typeof document === 'undefined' || !this.output) return;
+    
     const projects = [
       {
         name: 'CS211',
@@ -142,6 +151,7 @@ class Terminal {
   }
   
   showSkills(category = '') {
+    if (typeof document === 'undefined' || !this.output) return;
     this.log('\n=== TECHNICAL SKILLS ===\n', 'info');
     
     const skills = {
@@ -187,6 +197,7 @@ class Terminal {
   }
   
   showAbout() {
+    if (typeof document === 'undefined' || !this.output) return;
     const aboutText = [
       '',
       '👋 Hello! I\'m Chaitanya Kumar',
@@ -227,6 +238,7 @@ class Terminal {
   }
   
   showContact() {
+    if (typeof document === 'undefined' || !this.output) return;
     this.log('\n=== CONTACT ===\n', 'info');
     this.log('📧 Email: chaitanya.kumar@example.com', 'success');
     this.log('🔗 GitHub: github.com/chaitea321', 'success');
@@ -236,12 +248,14 @@ class Terminal {
   }
   
   toggleTheme() {
+    if (typeof document === 'undefined') return;
     document.body.classList.toggle('theme-retro');
     const isRetro = document.body.classList.contains('theme-retro');
     this.log(`\n${isRetro ? '✅' : '⚠️'} Theme toggled to ${isRetro ? 'retro' : 'synthwave'} mode`, 'info');
   }
   
   log(message, type = 'default') {
+    if (typeof document === 'undefined' || !this.output) return;
     const line = document.createElement('div');
     line.className = `output-line ${type}`;
     line.textContent = message;
@@ -250,6 +264,10 @@ class Terminal {
   }
   
   typewriterEffect(text, callback) {
+    if (typeof document === 'undefined' || !this.output) {
+      if (callback) callback();
+      return;
+    }
     const line = document.createElement('div');
     line.className = 'output-line';
     this.output.appendChild(line);
@@ -272,10 +290,13 @@ class Terminal {
   }
   
   scrollToBottom() {
-    this.output.scrollTop = this.output.scrollHeight;
+    if (typeof document !== 'undefined' && this.output) {
+      this.output.scrollTop = this.output.scrollHeight;
+    }
   }
   
   autocomplete() {
+    if (typeof document === 'undefined' || !this.input) return;
     const value = this.input.value;
     const matches = this.commandHistory.filter(cmd => 
       cmd.startsWith(value.toLowerCase())
