@@ -1,0 +1,43 @@
+{
+  "name": "Chaitanya Kumar - Terminal Portfolio",
+  "short_name": "TerminalCV",
+  "description": "FAANG-quality terminal-themed portfolio with synthwave aesthetic",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/icon-72.png",
+      "sizes": "72x72",
+      "type": "png"
+    },
+    {
+      "src": "/icons/icon-96.png",
+      "sizes": "96x96",
+      "type": "png"
+    },
+    {
+      "src": "/icons/icon-128.png",
+      "sizes": "128x128",
+      "type": "png"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "png"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/terminal-view.png",
+      "sizes": "1080x1920",
+      "label": "Terminal interface showing portfolio commands"
+    }
+  ]
+}

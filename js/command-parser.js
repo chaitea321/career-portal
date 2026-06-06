@@ -43,6 +43,21 @@ class CommandParser {
       description: 'Toggle synthwave theme',
       handler: (args, terminal) => terminal.toggleTheme()
     });
+    
+    this.commands.set('experience', {
+      description: 'Show work experience',
+      handler: (args, terminal) => terminal.showExperience(args[0])
+    });
+    
+    this.commands.set('education', {
+      description: 'Show education background',
+      handler: (args, terminal) => terminal.showEducation()
+    });
+    
+    this.commands.set('resume', {
+      description: 'Download resume text format',
+      handler: (args, terminal) => terminal.showResume()
+    });
   }
   
   registerCommand(name, config) {

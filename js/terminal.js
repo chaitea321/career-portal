@@ -4,7 +4,8 @@ class Terminal {
     this.input = typeof document !== 'undefined' ? document.getElementById('command-input') : null;
     this.history = [];
     this.historyIndex = -1;
-    this.commandHistory = ['help', 'projects', 'skills', 'about', 'contact'];
+    this.commandHistory = ['help', 'projects', 'skills', 'experience', 'education', 'resume', 'about', 'contact'];
+    this.announcementEl = null;
     
     this.init();
   }
@@ -13,10 +14,40 @@ class Terminal {
     if (this.output) {
       this.output.innerHTML = '';
     }
+    this.setupAccessibility();
     this.typewriterEffect(
       '> Welcome to Chaitanya Kumar\'s portfolio terminal v1.0.0\n',
       () => this.typewriterEffect('> Type "help" to see available commands\n', () => this.bindEvents())
     );
+  }
+  
+  setupAccessibility() {
+    // Create live region for screen reader announcements
+    if (typeof document !== 'undefined') {
+      this.announcementEl = document.createElement('div');
+      this.announcementEl.setAttribute('aria-live', 'polite');
+      this.announcementEl.setAttribute('aria-atomic', 'true');
+      this.announcementEl.className = 'sr-only';
+      this.announcementEl.id = 'a11y-announcements';
+      document.body.appendChild(this.announcementEl);
+      
+      // Trap focus in terminal for better keyboard experience
+      if (this.output) {
+        this.output.addEventListener('keydown', (e) => this.handleTerminalKeydown(e));
+      }
+    }
+  }
+  
+  handleTerminalKeydown(e) {
+    // Allow tab to move focus out of terminal
+    if (e.key === 'Tab') {
+      return; // Let default behavior handle tab navigation
+    }
+    
+    // Arrow keys for command history when input is focused
+    if (document.activeElement === this.input) {
+      return; // Input handles its own arrow keys
+    }
   }
   
   bindEvents() {
@@ -24,6 +55,15 @@ class Terminal {
       if (this.input) {
         this.input.addEventListener('keydown', (e) => this.handleInput(e));
         this.input.addEventListener('focus', () => this.input.scrollIntoView({ behavior: 'smooth' }));
+        
+        // Escape key focuses input for keyboard users
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && document.activeElement !== this.input) {
+            e.preventDefault();
+            this.input.focus();
+            this.announceMessage('Command input focused');
+          }
+        });
       }
       window.addEventListener('resize', () => this.scrollToBottom());
     }
@@ -98,6 +138,15 @@ class Terminal {
       case 'theme':
         this.toggleTheme();
         break;
+      case 'experience':
+        this.showExperience(args);
+        break;
+      case 'education':
+        this.showEducation(args);
+        break;
+      case 'resume':
+        this.showResume();
+        break;
       default:
         this.log(`Unknown command: ${cmd}`, 'warning');
     }
@@ -108,10 +157,20 @@ class Terminal {
       { cmd: 'help', desc: 'Show this help message' },
       { cmd: 'projects [filter]', desc: 'List GitHub projects (optional: filter by keyword)' },
       { cmd: 'skills [category]', desc: 'Show technical skills (optional: category)' },
+      { cmd: 'experience [level]', desc: 'Show work experience (optional: level)' },
+      { cmd: 'education', desc: 'Show education background' },
+      { cmd: 'resume', desc: 'Download resume text format' },
       { cmd: 'about', desc: 'About Chaitanya Kumar' },
       { cmd: 'contact', desc: 'Contact information' },
       { cmd: 'clear', desc: 'Clear terminal output' },
       { cmd: 'theme', desc: 'Toggle synthwave theme' }
+    ];
+    
+    // Accessibility shortcuts for keyboard users
+    const a11yShortcuts = [
+      { key: 'Tab', desc: 'Navigate between elements' },
+      { key: '↑/↓', desc: 'Command history' },
+      { key: 'Esc', desc: 'Focus input field' }
     ];
     
     this.log('\n=== AVAILABLE COMMANDS ===', 'info');
@@ -119,6 +178,13 @@ class Terminal {
       this.log(`  ${cmd.padEnd(15)} - ${desc}`, 'success');
     });
     this.log('========================\n', 'info');
+    
+    // Show keyboard shortcuts for accessibility
+    this.log('=== KEYBOARD SHORTCUTS ===', 'info');
+    a11yShortcuts.forEach(({ key, desc }) => {
+      this.log(`  ${key.padEnd(10)} - ${desc}`, 'success');
+    });
+    this.log('==========================\n', 'info');
   }
   
   showProjects(filter = '') {
@@ -264,6 +330,192 @@ class Terminal {
     this.log('========================\n', 'info');
   }
   
+  showExperience(level = '') {
+    if (typeof document === 'undefined' || !this.output) return;
+    this.log('\n=== WORK EXPERIENCE ===\n', 'info');
+    
+    const experience = [
+      {
+        role: 'Full Stack Engineer',
+        company: 'Freelance / Personal Projects',
+        period: '2023 - Present',
+        level: 'senior',
+        details: [
+          'Built MeshWatch - cost-optimized service mesh observability on k3s',
+          'Integrated Ollama Phi-3 for automated incident analysis',
+          'Reduced monitoring costs by 60% vs serverless alternatives',
+          'Deployed cloud-native architectures on Azure & AWS'
+        ]
+      },
+      {
+        role: 'DevOps Engineer',
+        company: 'Personal Homelab Projects',
+        period: '2022 - Present',
+        level: 'mid',
+        details: [
+          'Managed k3s Kubernetes cluster with Istio service mesh',
+          'Implemented Prometheus/Grafana/Loki monitoring stack',
+          'Automated deployments with GitHub Actions CI/CD',
+          'Configured Cloudflare DNS, CDN, and SSL termination'
+        ]
+      },
+      {
+        role: 'Software Engineering Intern',
+        company: 'Academic Projects',
+        period: '2023 - 2024',
+        level: 'junior',
+        details: [
+          'Built full-stack web applications for coursework',
+          'Developed real-time collaboration features',
+          'Implemented RESTful APIs with Node.js and Express',
+          'Created responsive frontends with React and TypeScript'
+        ]
+      }
+    ];
+    
+    const filtered = level 
+      ? experience.filter(e => e.level === level.toLowerCase())
+      : experience;
+    
+    if (filtered.length === 0) {
+      this.log(`No experience found for level: ${level}`, 'warning');
+      this.log('Available levels: senior, mid, junior', 'info');
+    } else {
+      filtered.forEach(exp => {
+        const card = document.createElement('div');
+        card.className = 'output-line project-card';
+        card.innerHTML = `
+          <div class="project-name">🏢 ${exp.role}</div>
+          <div class="project-desc">${exp.company} | ${exp.period}</div>
+          <ul style="list-style: none; padding-left: 1rem;">
+            ${exp.details.map(d => `<li style="margin: 0.25rem 0;">   • ${d}</li>`).join('')}
+          </ul>
+        `;
+        this.output.appendChild(card);
+      });
+    }
+    
+    this.log('\n========================\n', 'info');
+  }
+  
+  showEducation() {
+    if (typeof document === 'undefined' || !this.output) return;
+    this.log('\n=== EDUCATION ===\n', 'info');
+    
+    const education = [
+      {
+        degree: 'Bachelor of Science in Computer Science',
+        institution: 'University of Illinois (CS211)',
+        year: '2023 - 2024',
+        details: [
+          'Full-stack web development',
+          'Data structures and algorithms',
+          'Software engineering principles',
+          'Database systems and cloud computing'
+        ]
+      },
+      {
+        degree: 'Certifications & Self-Study',
+        institution: 'Online Platforms',
+        year: '2022 - Present',
+        details: [
+          'Kubernetes Administration (CKA preparation)',
+          'Cloud Architecture (Azure/AWS)',
+          'DevOps best practices and CI/CD',
+          'Service mesh with Istio and Linkerd'
+        ]
+      }
+    ];
+    
+    education.forEach(edu => {
+      const card = document.createElement('div');
+      card.className = 'output-line project-card';
+      card.innerHTML = `
+        <div class="project-name">🎓 ${edu.degree}</div>
+        <div class="project-desc">${edu.institution} | ${edu.year}</div>
+        <ul style="list-style: none; padding-left: 1rem;">
+          ${edu.details.map(d => `<li style="margin: 0.25rem 0;">   • ${d}</li>`).join('')}
+        </ul>
+      `;
+      this.output.appendChild(card);
+    });
+    
+    this.log('\n========================\n', 'info');
+  }
+  
+  showResume() {
+    if (typeof document === 'undefined' || !this.output) return;
+    this.log('\n=== RESUME TEXT ===\n', 'info');
+    
+    const resumeText = `
+CHAITANYA KUMAR
+Full Stack Engineer | Kubernetes Enthusiast
+📍 Aurora, IL, USA
+📧 chaitanya.kumar@example.com
+🔗 github.com/chaitea321
+💼 linkedin.com/in/chaitea321
+
+EMPLOYMENT HISTORY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Full Stack Engineer | Freelance / Personal Projects (2023 - Present)
+  • Built MeshWatch - cost-optimized service mesh observability on k3s
+  • Integrated Ollama Phi-3 for automated incident analysis
+  • Reduced monitoring costs by 60% vs serverless alternatives
+  • Deployed cloud-native architectures on Azure & AWS
+
+DevOps Engineer | Personal Homelab Projects (2022 - Present)
+  • Managed k3s Kubernetes cluster with Istio service mesh
+  • Implemented Prometheus/Grafana/Loki monitoring stack
+  • Automated deployments with GitHub Actions CI/CD
+  • Configured Cloudflare DNS, CDN, and SSL termination
+
+Software Engineering Intern | Academic Projects (2023 - 2024)
+  • Built full-stack web applications for coursework
+  • Developed real-time collaboration features
+  • Implemented RESTful APIs with Node.js and Express
+  • Created responsive frontends with React and TypeScript
+
+EDUCATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+B.S. Computer Science | University of Illinois (2023 - 2024)
+  • Full-stack web development
+  • Data structures and algorithms
+  • Software engineering principles
+  • Database systems and cloud computing
+
+Certifications & Self-Study (2022 - Present)
+  • Kubernetes Administration (CKA preparation)
+  • Cloud Architecture (Azure/AWS)
+  • DevOps best practices and CI/CD
+  • Service mesh with Istio and Linkerd
+
+SKILLS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Cloud: Azure, AWS, Cloudflare, Docker, Kubernetes
+Frontend: React.js, Next.js, TypeScript, CSS3, Tailwind
+Backend: Node.js, Express, Python, FastAPI, GraphQL, REST
+DevOps: GitHub Actions, Terraform, Prometheus, Grafana, Loki
+
+PROJECTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+meshwatch - Service mesh observability platform (⭐28)
+  • Istio-based monitoring with real-time metrics
+  • Cost-optimized vs serverless alternatives
+  • AI-powered incident analysis with Ollama Phi-3
+
+CS211 - Course management system (⭐12)
+  • Full-stack web application with real-time updates
+  • React frontend with Node.js/Express backend
+  • PostgreSQL database with Redis caching
+
+${'='.repeat(40)}
+Generated from chai-homelab.com portfolio terminal
+    `.trim();
+    
+    this.log(resumeText, 'default');
+    this.log('\n💡 Tip: Copy this text or visit github.com/chaitea321 for PDF', 'info');
+  }
+  
   toggleTheme() {
     if (typeof document === 'undefined') return;
     document.body.classList.toggle('theme-retro');
@@ -278,6 +530,21 @@ class Terminal {
     line.textContent = message;
     this.output.appendChild(line);
     this.scrollToBottom();
+    
+    // Announce to screen readers (first and last lines only to avoid spam)
+    if (this.announcementEl && message.trim() && !message.startsWith('   ')) {
+      void this.announceMessage(message.trim());
+    }
+  }
+  
+  announceMessage(message) {
+    if (this.announcementEl) {
+      // Debounce announcements to avoid screen reader spam
+      clearTimeout(this._announcementTimeout);
+      this._announcementTimeout = setTimeout(() => {
+        this.announcementEl.textContent = message;
+      }, 300);
+    }
   }
   
   typewriterEffect(text, callback) {
@@ -307,9 +574,17 @@ class Terminal {
   }
   
   scrollToBottom() {
-    if (typeof document !== 'undefined' && this.output) {
-      this.output.scrollTop = this.output.scrollHeight;
+    if (typeof document === 'undefined' || !this.output) return;
+    
+    // Use requestAnimationFrame for smooth scrolling
+    if (this._rafId) {
+      cancelAnimationFrame(this._rafId);
     }
+    
+    this._rafId = requestAnimationFrame(() => {
+      this.output.scrollTop = this.output.scrollHeight;
+      this._rafId = null;
+    });
   }
   
   autocomplete() {

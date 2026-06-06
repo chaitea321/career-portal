@@ -44,6 +44,10 @@ body {
   background: linear-gradient(180deg, var(--bg-dark), var(--bg-darker));
 }
 
+.terminal-header.neon-pulse .glitch {
+  animation: glitch 3s infinite, neonPulse 4s infinite;
+}
+
 .glitch {
   font-size: 2.5rem;
   font-weight: 700;
@@ -98,6 +102,69 @@ body {
 }
 
 .audio-icon { font-size: 1.2rem; }
+
+/* Screen reader only - visually hidden but accessible */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skip to content link for keyboard navigation */
+.skip-link {
+  position: absolute;
+  top: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--neon-pink);
+  color: var(--bg-darker);
+  padding: 0.5rem 1rem;
+  z-index: 1001;
+  transition: top 0.3s;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+/* Focus visible styles for keyboard navigation */
+.terminal-input:focus-visible,
+.hidden-btn:focus-visible,
+[role="log"]:focus-visible {
+  outline: 2px solid var(--neon-cyan);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --text-primary: #ffffff;
+    --text-secondary: #cccccc;
+  }
+  
+  .terminal-output {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.1s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.1s !important;
+  }
+  
+  .glitch, .glitch::before, .glitch::after {
+    animation: none;
+  }
+}
 
 .terminal-container {
   max-width: 1000px;
@@ -200,9 +267,66 @@ body {
   100% { clip-path: inset(95% 0 5% 0); transform: translate(0); }
 }
 
+@keyframes neonPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes matrixRain {
+  0% { transform: translateY(-100%); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
+
+@keyframes cursorBlink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.terminal-input::after {
+  content: '_';
+  animation: cursorBlink 1s infinite;
+  color: var(--neon-cyan);
+  margin-left: 2px;
+}
+
+.matrix-column {
+  position: fixed;
+  top: -100%;
+  left: var(--x, 0);
+  width: 2px;
+  height: 100%;
+  background: linear-gradient(to bottom, transparent, var(--neon-cyan), transparent);
+  animation: matrixRain var(--duration, 3s) linear infinite;
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: -1;
+}
+
 @media (max-width: 768px) {
   .glitch { font-size: 1.8rem; }
   .subtitle { font-size: 0.95rem; }
   .terminal-container { padding: 1rem; margin: 1rem; }
   .terminal-output { min-height: 300px; max-height: 400px; font-size: 0.85rem; }
 }
+
+/* Audio enabled state - subtle visual feedback */
+.audio-enabled .hidden-btn {
+  animation: neonPulse 2s infinite;
+}
+
+/* Focus visible for all interactive elements */
+*:focus-visible {
+  outline: 2px solid var(--neon-cyan);
+  outline-offset: 2px;
+}
+
+/* Print styles - clean terminal output */
+@media print {
+  body { background: white; color: black; }
+  .terminal-header, .command-line, .terminal-footer, #crt-overlay { display: none; }
+  .terminal-output { border: 1px solid #ccc; max-height: none; }
+  .output-line { color: black !important; }
+}
+
