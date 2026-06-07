@@ -25,6 +25,34 @@ body {
   min-height: 100vh;
 }
 
+/* Retro theme - warm amber/monochrome palette */
+body.theme-retro {
+  --neon-pink: #ff8c00;
+  --neon-purple: #b87329;
+  --neon-cyan: #ffaa00;
+  --bg-dark: #1a1510;
+  --bg-darker: #0f0d0a;
+  --text-primary: #e8c67a;
+  --text-secondary: #9a8050;
+  --success: #80ff00;
+  --warning: #ffcc00;
+}
+
+body.theme-retro .terminal-header {
+  border-bottom-color: var(--neon-pink);
+  background: linear-gradient(180deg, var(--bg-dark), #0a0805);
+}
+
+body.theme-retro .glitch {
+  color: var(--neon-pink);
+  text-shadow: 0 0 10px var(--neon-pink), 0 0 20px var(--neon-pink);
+}
+
+body.theme-retro .terminal-container,
+body.theme-retro .terminal-output {
+  background: var(--bg-dark);
+}
+
 #crt-overlay {
   position: fixed;
   top: 0; left: 0;
