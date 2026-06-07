@@ -1,4 +1,4 @@
-const CACHE_NAME = 'career-portal-v2';
+const CACHE_NAME = 'career-portal-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -15,7 +15,12 @@ const ASSETS_TO_CACHE = [
   '/js/performance.js',
   '/js/visual-effects.js',
   '/js/pwa.js',
-  '/config/career-fair.json'
+  '/config/career-fair.json',
+  '/icons/icon-72.png',
+  '/icons/icon-96.png',
+  '/icons/icon-128.png',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png'
 ];
 
 // Install event - cache assets
@@ -52,8 +57,8 @@ self.addEventListener('fetch', (event) => {
       return fetch(event.request).then((response) => {
         const responseClone = response.clone();
         
-        // Only cache GET requests
-        if (response && event.request.method === 'GET') {
+        // Only cache successful GET requests with valid status codes
+        if (response && event.request.method === 'GET' && response.ok) {
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseClone);
           });
