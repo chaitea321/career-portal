@@ -1,12 +1,21 @@
-const CACHE_NAME = 'career-portal-v1';
+const CACHE_NAME = 'career-portal-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
+  '/offline.html',
+  '/manifest.json',
   '/css/styles.css',
   '/js/terminal.js',
   '/js/command-parser.js',
   '/js/github-api.js',
-  '/js/audio.js'
+  '/js/audio.js',
+  '/js/project-catalog.js',
+  '/js/meshwatch-api.js',
+  '/js/ai-assistant.js',
+  '/js/performance.js',
+  '/js/visual-effects.js',
+  '/js/pwa.js',
+  '/config/career-fair.json'
 ];
 
 // Install event - cache assets
@@ -32,7 +41,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - serve from cache, fallback to offline.html
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
@@ -43,15 +52,18 @@ self.addEventListener('fetch', (event) => {
       return fetch(event.request).then((response) => {
         const responseClone = response.clone();
         
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseClone);
-        });
+        // Only cache GET requests
+        if (response && event.request.method === 'GET') {
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+        }
         
         return response;
+      }).catch(() => {
+        // Fallback to offline page when network is unavailable
+        return caches.match('/offline.html');
       });
-    }).catch(() => {
-      // Fallback for offline mode
-      return caches.match('/index.html');
     })
   );
 });

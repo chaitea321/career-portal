@@ -5,8 +5,9 @@ class AIAssistant {
   constructor() {
     const baseUrl = (typeof window !== 'undefined' && window.location) ? window.location.origin + '/api/agent' : '/api/agent';
     this.AZURE_AGENT_BASE = baseUrl;
-    this.TAILSCALE_OLLAMA_URL = 'http://100.65.214.138:11434';
     this.DEFAULT_MODEL = 'phi-3';
+    this._configUrl = '/config/career-fair.json';
+    this.TAILSCALE_OLLAMA_URL = 'http://100.65.214.138:11434'; // fallback
     this._systemPrompt = `You are an AI assistant for Chaitanya Kumar's developer portfolio at chai-homelab.com. 
 Answer questions about their projects, skills, experience, and technical decisions. 
 Be concise, technical, and highlight key achievements.
@@ -18,6 +19,23 @@ Key facts:
 - Minecraft monitoring stack with Discord bot integration (10 slash commands)
 - Tech stack: Kubernetes, Istio, Prometheus, Grafana, Loki, Azure Functions, React, Node.js, Python
 - Pursuing CKA certification, based in Aurora, IL`;
+  }
+
+  async loadConfig() {
+    try {
+      const resp = await fetch(this._configUrl);
+      if (resp.ok) {
+        const config = await resp.json();
+        if (config.aiAssistant?.tailscaleUrl) {
+          this.TAILSCALE_OLLAMA_URL = config.aiAssistant.tailscaleUrl;
+        }
+        if (config.aiAssistant?.model) {
+          this.DEFAULT_MODEL = config.aiAssistant.model;
+        }
+      }
+    } catch (e) {
+      // Keep defaults on config load failure
+    }
   }
 
   // Query Ollama AI with a user question about the portfolio

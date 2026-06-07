@@ -36,6 +36,7 @@ class Terminal {
   get aiAssistant() {
     if (!this._aiAssistant) {
       this._aiAssistant = new AIAssistant();
+      this._aiAssistant.loadConfig();
     }
     return this._aiAssistant;
   }
@@ -763,59 +764,28 @@ Generated from chai-homelab.com portfolio terminal
       });
       if (line) this.log(line, 'info');
     } else {
-      // Fallback: use cached knowledge to answer
+      // Fallback: use cached knowledge (already returned in response.data)
       this.log('\n\u{1f916} AI Response (cached knowledge):', 'success');
-      const answer = this.getCachedAIAnswer(question);
-      this.log(answer, 'info');
+      const answer = response.data;
+      if (answer) {
+        const words = answer.split(' ');
+        let line = '';
+        const maxLineLength = 80;
+        words.forEach(word => {
+          if ((line + word).length > maxLineLength) {
+            this.log(line, 'info');
+            line = word;
+          } else {
+            line += (line ? ' ' : '') + word;
+          }
+        });
+        if (line) this.log(line, 'info');
+      } else {
+        this.log('AI backend unavailable. Deploy Ollama via Tailscale or Azure Functions for live answers.', 'warning');
+      }
     }
 
     this.log('', 'default');
-  }
-
-  getCachedAIAnswer(question) {
-    const q = question.toLowerCase();
-
-    if (q.includes('meshwatch') || q.includes('monitoring')) {
-      return 'MeshWatch is a cost-optimized service mesh observability platform built on k3s Kubernetes with Istio. It uses mTLS for service-to-service encryption, OpenTelemetry for distributed tracing, and integrates Ollama Phi-3 AI for automated incident analysis. Key cost savings: $5.12/month vs $7+/month for serverless alternatives - a 60% reduction.';
-    }
-
-    if (q.includes('kubernetes') || q.includes('kube') || q.includes('k8s')) {
-      return 'I\'ve managed Kubernetes clusters using k3s (lightweight K3s) with Istio service mesh for production workloads. This includes ArgoCD GitOps patterns, External Secrets Operator with Azure Key Vault backend, cert-manager for TLS, and kube-prometheus-stack for monitoring. I also implemented canary deployments with Flagger for zero-downtime releases.';
-    }
-
-    if (q.includes('cost') || q.includes('save') || q.includes('price') || q.includes('$')) {
-      return 'I reduced monitoring costs by 60% compared to serverless alternatives. My MeshWatch stack runs on a $5/month k3s cluster with Istio, Prometheus, Grafana, Loki, and Tempo - providing full observability (metrics, traces, logs) while saving ~$7/month vs cloud-native managed services like Datadog or AWS CloudWatch.';
-    }
-
-    if (q.includes('ollama') || q.includes('ai') || q.includes('phi')) {
-      return 'I integrated Ollama Phi-3 on my k3s cluster for automated incident analysis. When alerts fire, the AI analyzes Prometheus metrics and Grafana dashboards to suggest root causes and remediation steps. This is accessed via Tailscale (outbound-only tunnel), keeping everything secure without opening firewall ports.';
-    }
-
-    if (q.includes('minecraft')) {
-      return 'I built a full Minecraft server observability stack with Istio service mesh, Prometheus metrics (TPS, heap memory, GC pauses), and a Discord bot integration with 10 slash commands (/status, /players, /tps, etc.). It uses JMX Exporter for Java metrics and RCON protocol for server control. The AI-powered lag analysis helps identify performance bottlenecks in real-time.';
-    }
-
-    if (q.includes('azure') || q.includes('function')) {
-      return 'I use Azure Blob Storage ($0.50/month) to host this portfolio statically, with Azure Functions serving as a secure API gateway for exposing Prometheus metrics and proxying Ollama AI queries. GitHub OAuth PKCE flow authenticates users before they can access live cluster metrics.';
-    }
-
-    if (q.includes('skills') || q.includes('stack') || q.includes('technology')) {
-      return 'My core tech stack includes: Cloud - Azure, AWS, Cloudflare, Docker, Kubernetes. Frontend - React.js, Next.js, TypeScript, CSS3, PWA development. Backend - Node.js, Express, Python, FastAPI, GraphQL, REST APIs. DevOps - GitHub Actions, Terraform, Prometheus, Grafana, Loki, Istio service mesh.';
-    }
-
-    if (q.includes('education') || q.includes('degree') || q.includes('school')) {
-      return 'I have a B.S. in Computer Science from the University of Illinois (CS211), with coursework in full-stack web development, data structures, software engineering principles, and database systems. I\'m also preparing for the CKA (Certified Kubernetes Administrator) certification through self-study.';
-    }
-
-    if (q.includes('experience') || q.includes('work') || q.includes('job')) {
-      return 'I have three main experience areas: 1) Full Stack Engineer - building MeshWatch and integrating Ollama AI, reducing costs by 60%. 2) DevOps Engineer - managing k3s Kubernetes with Istio service mesh, Prometheus/Grafana/Loki monitoring, GitHub Actions CI/CD. 3) Software Engineering Intern - full-stack web apps, real-time collaboration features, RESTful APIs with Node.js/Express.';
-    }
-
-    if (q.includes('contact') || q.includes('email') || q.includes('linkedin') || q.includes('github')) {
-      return 'You can find me at: Email - chaitanya.kumar@example.com, GitHub - github.com/chaitea321 (with 28+ stars on MeshWatch), LinkedIn - linkedin.com/in/chaitea321, Portfolio - chai-homelab.com';
-    }
-
-    return 'Great question! I can provide detailed answers about my projects (MeshWatch, Minecraft monitoring, CS211), technical skills (Kubernetes, Azure, React, Python), cost optimization achievements (60% savings), or career background. Try asking about any of these topics for a comprehensive answer.';
   }
 
   toggleTheme() {
