@@ -94,16 +94,20 @@ class VisualEffects {
   }
 }
 
-// Initialize visual effects when DOM is ready
+// Initialize visual effects with error boundary when DOM is ready
 if (typeof document !== 'undefined') {
-  const visualEffects = new VisualEffects();
-  
-  // Handle window resize
-  let resizeTimeout;
-  window.addEventListener('resize', () => {
-    clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(() => visualEffects.resize(), 250);
-  });
+  try {
+    const visualEffects = new VisualEffects();
+    
+    // Handle window resize
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => visualEffects.resize(), 250);
+    });
+  } catch (error) {
+    console.warn('[VisualEffects] Failed to initialize, effects disabled:', error.message);
+  }
 }
 
 export default VisualEffects;

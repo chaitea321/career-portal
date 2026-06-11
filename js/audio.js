@@ -1,10 +1,22 @@
 class AudioController {
   constructor() {
     this.enabled = false;
-    this.audioContext = typeof window !== 'undefined' 
-      ? new (window.AudioContext || window.webkitAudioContext)() 
-      : null;
+    this.audioContext = null;
+    this.soundEnabled = false;
     this.keys = new Set();
+    this._initialized = false;
+    this._soundQueue = [];
+    this._currentSound = null;
+    
+    // Try to initialize Web Audio API (standard browser API)
+    try {
+      if (typeof window !== 'undefined' && typeof Audio === 'function') {
+        // Use standard Audio API for tone generation
+        this.soundEnabled = true;
+      }
+    } catch (e) {
+      console.warn('[AudioController] Web Audio API not available, sounds disabled');
+    }
     
     this.init();
   }
@@ -32,28 +44,107 @@ class AudioController {
   
   createTone(freq, duration) {
     return () => {
-      if (!this.enabled) return;
+      if (!this.enabled || !this.soundEnabled) return Promise.resolve();
       
-      const oscillator = this.audioContext.createOscillator();
-      const gain = this.audioContext.createGain();
+      // Generate a WAV data URI for the tone and play it via standard Audio API
+      const sampleRate = 48000;
+      const numSamples = Math.floor(sampleRate * duration);
+      const buffer = new Float32Array(numSamples);
       
-      oscillator.connect(gain);
-      gain.connect(this.audioContext.destination);
+      for (let i = 0; i < numSamples; i++) {
+        const t = i / sampleRate;
+        // Apply envelope to avoid clicking
+        const envelope = Math.min(i / (sampleRate * 0.005), 1) * Math.max(1 - (i / numSamples), 0);
+        buffer[i] = Math.sin(2 * Math.PI * freq * t) * envelope * 0.3;
+      }
       
-      oscillator.frequency.value = freq;
-      oscillator.type = 'sine';
+      // Convert to WAV format
+      const wavBuffer = this._floatToWav(buffer, sampleRate);
+      const blob = new Blob([wavBuffer], { type: 'audio/wav' });
+      const url = URL.createObjectURL(blob);
       
-      gain.gain.setValueAtTime(0.3, this.audioContext.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
-      
-      oscillator.start(this.audioContext.currentTime);
-      oscillator.stop(this.audioContext.currentTime + duration);
+      return new Promise(resolve => {
+        const audio = new Audio(url);
+        audio.play().catch(() => {});
+        audio.addEventListener('ended', () => {
+          URL.revokeObjectURL(url);
+          resolve();
+        });
+        audio.addEventListener('error', () => {
+          URL.revokeObjectURL(url);
+          resolve();
+        });
+        // Fallback timeout in case 'ended' never fires
+        setTimeout(resolve, duration * 1000 + 100);
+      });
     };
   }
   
-  playSound(type) {
-    if (this.sounds[type]) {
-      this.sounds[type]();
+  _floatToWav(samples, sampleRate) {
+    const numChannels = 1;
+    const bitsPerSample = 16;
+    const byteRate = bitsPerSample / 8;
+    const dataLength = samples.length * byteRate;
+    const headerLength = 44;
+    const arrayBuffer = new ArrayBuffer(headerLength + dataLength);
+    const view = new DataView(arrayBuffer);
+    
+    // RIFF header
+    this._writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + dataLength, true);
+    this._writeString(view, 8, 'WAVE');
+    // fmt chunk
+    this._writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint16(28, bitsPerSample, true);
+    this._writeString(view, 32, 'data');
+    view.setUint32(36, dataLength, true);
+    
+    // Write PCM samples
+    let offset = 44;
+    for (let i = 0; i < samples.length; i++) {
+      const sample = Math.max(-1, Math.min(1, samples[i]));
+      const val = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+      view.setInt16(offset, val, true);
+      offset += 2;
+    }
+    
+    return arrayBuffer;
+  }
+  
+  _writeString(view, offset, string) {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
+    }
+  }
+  
+  async playSound(type) {
+    if (!this.sounds[type]) return;
+    
+    // Add to queue and process sequentially
+    this._soundQueue.push(this.sounds[type]);
+    
+    // If no sound is currently playing, start processing the queue
+    if (!this._currentSound) {
+      await this._processQueue();
+    }
+  }
+  
+  async _processQueue() {
+    while (this._soundQueue.length > 0 && this.enabled && this.soundEnabled) {
+      const soundFn = this._soundQueue.shift();
+      this._currentSound = soundFn;
+      
+      try {
+        await soundFn();
+      } catch (e) {
+        console.warn('[AudioController] Sound playback failed:', e.message);
+      }
+      
+      this._currentSound = null;
     }
   }
   
@@ -70,9 +161,7 @@ class AudioController {
         this.audioContext.resume();
       }
       
-      if (typeof document !== 'undefined') {
-        void document.body?.classList.toggle('audio-enabled', this.enabled);
-      }
+      void document.body?.classList.toggle('audio-enabled', this.enabled);
     }
     
     this.savePreference();
@@ -96,17 +185,17 @@ class AudioController {
     }
   }
   
-  handleInput(key) {
+  async handleInput(key) {
     switch (key) {
       case 'Enter':
-        this.playSound('enter');
+        await this.playSound('enter');
         break;
       case 'Backspace':
-        this.playSound('backspace');
+        await this.playSound('backspace');
         break;
       default:
         if (key.length === 1) {
-          this.playSound('keydown');
+          await this.playSound('keydown');
         }
     }
   }

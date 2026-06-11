@@ -87,7 +87,8 @@ class MeshWatchAPI {
       }
 
       const data = await response.json();
-      return { success: true, data };
+      // Flatten data into return object so terminal.js can access properties directly (podsDeployed, etc.)
+      return { success: true, ...data };
     } catch (error) {
       console.error('[MeshWatchAPI] Metrics fetch failed:', error.message);
       return {
@@ -128,7 +129,8 @@ class MeshWatchAPI {
       }
 
       const data = await response.json();
-      return { success: true, data };
+      // Flatten data into return object for consistent structure
+      return { success: true, ...data };
     } catch (error) {
       console.error('[MeshWatchAPI] Minecraft metrics fetch failed:', error.message);
       return {

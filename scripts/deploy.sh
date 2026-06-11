@@ -78,7 +78,7 @@ deploy_static() {
   <system.webServer>
     <httpHeaders>
       <clear />
-      <add key="Content-Security-Policy" value="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://*.azurewe.net;" />
+      <add key="Content-Security-Policy" value="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://*.azurewebsites.net;" />
       <add key="X-Frame-Options" value="deny" />
       <add key="X-XSSR-Policy" value="strict" />
       <add key="Cache-Control" value="max-age=31536000;immutable" />

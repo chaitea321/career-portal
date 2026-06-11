@@ -6,10 +6,9 @@ describe('Project Catalog Module', () => {
   it('exports PROJECT_CATALOG with all projects', () => {
     assert.ok(PROJECT_CATALOG);
     const slugs = Object.keys(PROJECT_CATALOG);
-    assert.strictEqual(slugs.length, 6, 'Should have 6 projects');
+    assert.strictEqual(slugs.length, 5, 'Should have 5 projects');
     assert.ok(slugs.includes('meshwatch'));
     assert.ok(slugs.includes('minecraft-monitoring'));
-    assert.ok(slugs.includes('cs211'));
     assert.ok(slugs.includes('career-portal'));
     assert.ok(slugs.includes('monitoring'));
     assert.ok(slugs.includes('azure-functions'));
@@ -17,7 +16,7 @@ describe('Project Catalog Module', () => {
 
   it('getProjects returns all projects when no filter', () => {
     const projects = getProjects();
-    assert.strictEqual(projects.length, 6);
+    assert.strictEqual(projects.length, 5);
   });
 
   it('getProjects filters by category', () => {
@@ -78,6 +77,6 @@ describe('Project Catalog Module', () => {
   it('DEFAULT_PROJECT_ORDER defines display order', () => {
     const meshwatch = getProject('meshwatch');
     assert.strictEqual(meshwatch.slug, 'meshwatch');
-    assert.strictEqual(getProjects().length, 6);
+    assert.strictEqual(getProjects().length, 5);
   });
 });

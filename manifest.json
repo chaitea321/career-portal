@@ -1,11 +1,15 @@
 {
-  "name": "Chaitanya Kumar - Terminal Portfolio",
-  "short_name": "TerminalCV",
+  "name": "Eugene Vincent - Terminal Portfolio",
+  "short_name": "TermCV",
   "description": "FAANG-quality terminal-themed portfolio with synthwave aesthetic",
   "start_url": "/",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": [
+    "landscape",
+    "portrait"
+  ],
   "scope": "/",
+  "prefer_related_applications": true,
   "icons": [
     {
       "src": "/icons/icon-72.png",

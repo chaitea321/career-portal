@@ -23,6 +23,16 @@ body {
   font-family: var(--font-mono);
   line-height: 1.6;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Make main content grow to push footer to bottom */
+body > main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 /* Retro theme - warm amber/monochrome palette */
@@ -193,40 +203,10 @@ body.theme-retro .terminal-output {
   }
 }
 
-.terminal-container {
-  max-width: 1000px;
-  margin: 2rem auto;
-  padding: 2rem;
-  background: var(--bg-dark);
-  border: 1px solid var(--neon-purple);
-  box-shadow: var(--glow-purple);
-}
-
-.terminal-output {
-  min-height: 400px;
-  max-height: 600px;
-  overflow-y: auto;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  background: var(--bg-darker);
-  border: 1px solid var(--neon-pink);
-  font-size: 0.95rem;
-}
-
-.terminal-output::-webkit-scrollbar { width: 8px; }
-.terminal-output::-webkit-scrollbar-track { background: var(--bg-darker); }
-.terminal-output::-webkit-scrollbar-thumb { background: var(--neon-purple); border-radius: 4px; }
-
-.output-line { margin-bottom: 0.5rem; animation: fadeIn 0.3s ease; }
-.output-line.command { color: var(--neon-pink); font-weight: bold; }
-.output-line.success { color: var(--success); }
-.output-line.warning { color: var(--warning); }
-.output-line.info { color: var(--neon-cyan); }
-
-.output-line.project-card {
-  border-left: 3px solid var(--neon-cyan);
-  padding-left: 1rem;
-  margin: 1rem 0;
+.terminal-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 60vh;
 }
 
 .output-line.project-name {
@@ -237,30 +217,6 @@ body.theme-retro .terminal-output {
 
 .output-line.project-desc { color: var(--text-secondary); margin-bottom: 0.25rem; }
 .output-line.project-link { color: var(--neon-purple); text-decoration: underline; }
-
-.command-line { display: flex; align-items: center; gap: 0.5rem; }
-.prompt { color: var(--neon-pink); font-weight: bold; }
-
-.terminal-input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: 1rem;
-  outline: none;
-}
-
-.terminal-input::placeholder { color: var(--text-secondary); opacity: 0.5; }
-
-.terminal-footer {
-  text-align: center;
-  padding: 1rem;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-}
-
-.command { color: var(--neon-cyan); font-family: var(--font-mono); }
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(5px); }
@@ -309,13 +265,6 @@ body.theme-retro .terminal-output {
 @keyframes cursorBlink {
   0%, 50% { opacity: 1; }
   51%, 100% { opacity: 0; }
-}
-
-.terminal-input::after {
-  content: '_';
-  animation: cursorBlink 1s infinite;
-  color: var(--neon-cyan);
-  margin-left: 2px;
 }
 
 .matrix-column {
@@ -406,10 +355,8 @@ body.theme-retro .terminal-output {
 
 /* Footer layout */
 .footer-left, .footer-right { display: flex; justify-content: center; align-items: center; }
-.terminal-footer { display: flex; justify-content: space-between; padding: 1rem 2rem; }
 
 @media (max-width: 768px) {
-  .terminal-footer { flex-direction: column; gap: 0.5rem; }
   .footer-left, .footer-right { justify-content: center; }
 }
 
@@ -420,10 +367,339 @@ body.theme-retro .terminal-output {
   animation: neonPulse 2s infinite;
 }
 
+/* Terminal window chrome - macOS style title bar */
+.terminal-window {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.terminal-titlebar {
+  background: linear-gradient(180deg, #1a1a2e 0%, #141425 100%);
+  padding: 0.6rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.terminal-titlebar .traffic-light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.terminal-titlebar .traffic-light:hover { opacity: 0.8; }
+.terminal-titlebar .traffic-light.red { background: #ff5f57; box-shadow: 0 0 4px rgba(255, 95, 87, 0.5); }
+.terminal-titlebar .traffic-light.yellow { background: #ffbd2e; box-shadow: 0 0 4px rgba(255, 189, 46, 0.5); }
+.terminal-titlebar .traffic-light.green { background: #28c755; box-shadow: 0 0 4px rgba(40, 199, 85, 0.5); }
+
+.terminal-titlebar .title-text {
+  flex: 1;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+}
+
+/* Enhanced terminal container with flex layout for sticky footer */
+.terminal-container {
+  max-width: 1200px;
+  margin: 1rem auto;
+  padding: 0;
+  background: var(--bg-dark);
+  border: none;
+  box-shadow: none;
+  flex-shrink: 0;
+}
+
+/* Terminal body - contains titlebar + output + input */
+.terminal-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 60vh;
+}
+
+/* Enhanced terminal output area */
+.terminal-output {
+  min-height: 400px;
+  max-height: 65vh;
+  overflow-y: auto;
+  padding: 1rem 1.25rem;
+  margin-bottom: 0;
+  background: var(--bg-darker);
+  border: none;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  position: relative;
+}
+
+/* Inner shadow for depth */
+.terminal-output::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 20px;
+  background: linear-gradient(180deg, var(--bg-darker), transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Section dividers between output groups */
+.output-line.section-divider {
+  border: none;
+  padding: 0.75rem 0;
+  margin: 0.5rem 0;
+  text-align: center;
+  color: var(--text-secondary);
+  opacity: 0.4;
+  font-size: 0.8rem;
+  letter-spacing: 2px;
+}
+
+.output-line.section-divider::before {
+  content: '════════════════════════════════════════════════════';
+}
+
+/* Enhanced command lines with prompt styling */
+.output-line.command {
+  color: var(--neon-pink);
+  font-weight: bold;
+  padding: 0.3rem 0.75rem;
+  margin: 0.5rem -1.25rem;
+  border-left: 3px solid var(--neon-pink);
+  background: rgba(255, 0, 255, 0.04);
+  position: relative;
+}
+
+.output-line.command::before {
+  content: attr(data-prompt);
+  color: var(--text-secondary);
+  margin-right: 0.75rem;
+  font-weight: normal;
+  opacity: 0.7;
+}
+
+/* Enhanced info lines */
+.output-line.info {
+  color: var(--neon-cyan);
+  padding-left: 1.25rem;
+  position: relative;
+}
+
+.output-line.info::before {
+  content: '› ';
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+
+/* Enhanced success lines */
+.output-line.success {
+  color: var(--success);
+  padding-left: 1.25rem;
+  position: relative;
+}
+
+.output-line.success::before {
+  content: '✓ ';
+  opacity: 0.7;
+}
+
+/* Enhanced warning lines */
+.output-line.warning {
+  color: var(--warning);
+  padding-left: 1.25rem;
+  position: relative;
+}
+
+.output-line.warning::before {
+  content: '⚠ ';
+  opacity: 0.7;
+}
+
+/* Enhanced project cards with full border and gradient */
+.output-line.project-card {
+  border: 1px solid rgba(188, 19, 254, 0.2);
+  border-left: 3px solid var(--neon-cyan);
+  padding: 1rem 1rem 1rem 1.25rem;
+  margin: 0.75rem 0;
+  background: linear-gradient(135deg, rgba(188, 19, 254, 0.05), rgba(0, 255, 65, 0.02));
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.output-line.project-card:hover {
+  border-color: var(--neon-cyan);
+  background: linear-gradient(135deg, rgba(188, 19, 254, 0.08), rgba(0, 255, 65, 0.04));
+}
+
+/* Enhanced project badges - pill styling */
+.project-badge {
+  background: linear-gradient(135deg, var(--neon-purple), var(--neon-pink));
+  color: #fff;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  white-space: nowrap;
+  box-shadow: 0 0 8px rgba(188, 19, 254, 0.3);
+  display: inline-block;
+}
+
+/* Enhanced metrics box */
+.project-metrics {
+  font-size: 0.8rem;
+  background: linear-gradient(135deg, rgba(188, 19, 254, 0.08), rgba(0, 255, 65, 0.03));
+  border: 1px solid rgba(188, 19, 254, 0.3);
+  padding: 0.75rem;
+  margin: 0.5rem 0;
+  border-radius: 6px;
+}
+
+/* Enhanced command input area */
+.command-line {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  background: linear-gradient(180deg, #0e0e14, var(--bg-dark));
+  border-top: 1px solid rgba(255, 0, 255, 0.15);
+}
+
+.prompt {
+  color: var(--neon-pink);
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+/* Enhanced terminal input with glowing cursor */
+.terminal-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  outline: none;
+}
+
+/* Custom cursor block */
+.terminal-input::after {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 1.1em;
+  background: var(--neon-cyan);
+  animation: cursorBlink 1s infinite;
+  margin-left: 2px;
+  vertical-align: middle;
+}
+
+/* Enhanced footer - status bar style */
+.terminal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.4rem 1.25rem;
+  background: linear-gradient(180deg, #0e0e14, #0a0a10);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.terminal-footer .footer-left p {
+  margin: 0;
+}
+
+.footer-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Enhanced demo button with glow */
+.demo-btn {
+  background: linear-gradient(135deg, rgba(0, 240, 252, 0.1), rgba(0, 240, 252, 0.05));
+  border: 1px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  padding: 0.3rem 0.9rem;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  border-radius: 4px;
+  transition: all 0.3s;
+  box-shadow: 0 0 10px rgba(0, 240, 252, 0.1);
+}
+
+.demo-btn:hover {
+  background: var(--neon-cyan);
+  color: var(--bg-darker);
+  box-shadow: 0 0 20px rgba(0, 240, 252, 0.4);
+}
+
+/* Enhanced status indicator with dot */
+.status-indicator {
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.status-indicator .status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-indicator.online .status-dot {
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success);
+  animation: neonPulse 2s infinite;
+}
+
+.status-indicator.offline .status-dot {
+  background: var(--warning);
+  box-shadow: 0 0 6px var(--warning);
+}
+
+/* Retro theme enhancements */
+body.theme-retro .terminal-titlebar {
+  background: linear-gradient(180deg, #2a2520 0%, #1f1c15 100%);
+}
+
+body.theme-retro .terminal-titlebar .traffic-light.red { background: #ff8c00; box-shadow: 0 0 4px rgba(255, 140, 0, 0.5); }
+body.theme-retro .terminal-titlebar .traffic-light.yellow { background: #b87329; box-shadow: 0 0 4px rgba(184, 115, 41, 0.5); }
+body.theme-retro .terminal-titlebar .traffic-light.green { background: #ffaa00; box-shadow: 0 0 4px rgba(255, 170, 0, 0.5); }
+
+body.theme-retro .output-line.command {
+  color: var(--neon-pink);
+  border-color: var(--neon-pink);
+  background: rgba(255, 140, 0, 0.06);
+}
+
+body.theme-retro .terminal-footer {
+  background: linear-gradient(180deg, #0f0d0a, #0a0908);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .glitch { font-size: 1.8rem; }
+  .subtitle { font-size: 0.95rem; }
+  .terminal-container { margin: 0.5rem; }
+  .terminal-output { min-height: 300px; max-height: 50vh; font-size: 0.85rem; padding: 0.75rem; }
+  .terminal-footer { flex-direction: column; gap: 0.3rem; text-align: center; }
+  .footer-right { justify-content: center; }
+}
+
 /* Print styles - clean terminal output */
 @media print {
   body { background: white; color: black; }
-  .terminal-header, .command-line, .terminal-footer, #crt-overlay { display: none; }
+  .terminal-header, .command-line, .terminal-footer, #crt-overlay, .terminal-titlebar { display: none; }
   .terminal-output { border: 1px solid #ccc; max-height: none; }
   .output-line { color: black !important; }
 }

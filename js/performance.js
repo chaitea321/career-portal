@@ -52,33 +52,18 @@ class PerformanceMonitor {
       console.log('📊 Performance Metrics:', metrics.join(' | '));
     }
   }
-  
-  // Measure DOM content loaded time
-  measureDOMContentLoaded() {
-    this.mark('dom-content-loaded');
-    
-    const observer = new PerformanceObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.name === 'dom-content-loaded') {
-          console.log(`⚡ DOM Content Loaded: ${entry.duration.toFixed(2)}ms`);
-        }
-      });
-    });
-    
-    try {
-      observer.observe({ type: 'resource' });
-    } catch (error) {
-      // Ignore observer errors
-    }
-  }
 }
 
-// Initialize performance monitor if available
+// Initialize performance monitor with error boundary if available
 if (typeof window !== 'undefined') {
-  const perfMonitor = new PerformanceMonitor();
-  
-  // Expose to global scope for debugging
-  window.PerformanceMonitor = perfMonitor;
+  try {
+    const perfMonitor = new PerformanceMonitor();
+    
+    // Expose to global scope for debugging
+    window.PerformanceMonitor = perfMonitor;
+  } catch (error) {
+    console.warn('[PerformanceMonitor] Failed to initialize:', error.message);
+  }
 }
 
 export default PerformanceMonitor;

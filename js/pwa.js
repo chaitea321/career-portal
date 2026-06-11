@@ -1,5 +1,5 @@
 // PWA Service Worker Registration
-if ('serviceWorker' in navigator && 'PushManager' in window) {
+if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/js/service-worker.js')
       .then((registration) => {
@@ -19,19 +19,33 @@ if ('serviceWorker' in navigator && 'PushManager' in window) {
         console.error('PWA Service Worker registration failed:', error);
       });
   });
-  
-  // Request notification permission for future features
-  if ('Notification' in window && Notification.permission === 'default') {
-    // Silent permission request - user will see browser prompt
-    void Notification.requestPermission();
-  }
 }
 
 // Online/Offline status indicator
+function updateOnlineStatus(online) {
+  if (typeof document === 'undefined') return;
+  const statusEl = document.getElementById('online-status');
+  if (!statusEl) return;
+  
+  const dot = document.createElement('span');
+  dot.className = `status-indicator ${online ? 'online' : 'offline'}`;
+  dot.setAttribute('aria-label', online ? 'Online' : 'Offline');
+  statusEl.innerHTML = '';
+  statusEl.appendChild(dot);
+  statusEl.append(` ${online ? 'Online' : 'Offline'}`);
+}
+
 window.addEventListener('online', () => {
-  console.log('Connection restored - back online');
+  console.log('[PWA] Connection restored - back online');
+  updateOnlineStatus(true);
 });
 
 window.addEventListener('offline', () => {
-  console.log('Connection lost - using cached version');
+  console.log('[PWA] Connection lost - using cached version');
+  updateOnlineStatus(false);
 });
+
+// Initialize status on load
+if (typeof document !== 'undefined') {
+  updateOnlineStatus(navigator.onLine);
+}

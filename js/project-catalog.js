@@ -1,4 +1,7 @@
 // Project Catalog - Centralized project metadata for portfolio showcase
+
+import { escapeHtml, normalizeSlug } from './utils/helpers.js';
+
 const PROJECT_CATALOG = {
   'meshwatch': {
     name: 'MeshWatch',
@@ -66,36 +69,7 @@ const PROJECT_CATALOG = {
     ],
     demoNote: 'Demo mode shows cached metrics. Live data requires Azure Functions + Tailscale deployment.'
   },
-  'cs211': {
-    name: 'CS211',
-    slug: 'cs211',
-    description: 'Full-stack course management system with real-time updates, built as a capstone project demonstrating modern web development practices.',
-    category: 'web',
-    tags: ['fullstack', 'react', 'nodejs', 'postgresql'],
-    techStack: [
-      { name: 'React.js', level: 'Frontend Framework' },
-      { name: 'Node.js / Express', level: 'API Backend' },
-      { name: 'PostgreSQL', level: 'Relational Database' },
-      { name: 'Redis', level: 'Caching Layer' },
-      { name: 'WebSocket', level: 'Real-time Updates' }
-    ],
-    metrics: {
-      stars: 12,
-      forks: 3,
-      contributors: 1,
-      lastUpdated: '2024-05-15'
-    },
-    badges: ['⭐ Coursework', '💾 Full-stack'],
-    githubUrl: 'https://github.com/chaitea321/CS211',
-    liveUrl: null,
-    keyAchievements: [
-      'Built full-stack web application with real-time collaboration features',
-      'Implemented RESTful APIs with Node.js and Express',
-      'Created responsive frontend with React and TypeScript',
-      'PostgreSQL database design with Redis caching layer'
-    ],
-    demoNote: 'Demo mode shows cached metrics. Live data requires GitHub API access.'
-  },
+ 
   'career-portal': {
     name: 'Career Portal',
     slug: 'career-portal',
@@ -191,7 +165,7 @@ const PROJECT_CATALOG = {
 
 // Category definitions for filtering
 const CATEGORY_DEFINITIONS = {
-  cloud: { label: '☁️ Cloud', description: 'Azure, AWS, Serverless, Container Services' },
+  cloud: { label: '☁️ Cloud', description: 'Azure, Serverless, Container Services' },
   devops: { label: '🏷 DevOps', description: 'Kubernetes, CI/CD, Observability, Service Mesh' },
   iot: { label: '🎮 IoT / Gaming', description: 'Minecraft, RCON, Discord Bot, Hardware Monitoring' },
   web: { label: '💾 Web Apps', description: 'Full-stack, React, Node.js, Real-time Systems' }
@@ -202,7 +176,6 @@ const DEFAULT_PROJECT_ORDER = [
   'meshwatch',
   'minecraft-monitoring',
   'monitoring',
-  'cs211',
   'azure-functions',
   'career-portal'
 ];
@@ -243,14 +216,14 @@ function getProjects(filterCategory = '', filterKeyword = '') {
 
 // Helper: Get a single project by slug or name
 function getProject(identifier) {
-  const slug = identifier.toLowerCase().replace(/\s+/g, '-');
+  const slug = normalizeSlug(identifier);
   return PROJECT_CATALOG[slug] || null;
 }
 
-// Helper: Generate badge HTML string
+// Helper: Generate badge HTML string (with escaping for safety)
 function generateBadges(badges) {
   if (!badges || badges.length === 0) return '';
-  return badges.map(b => `<span class="project-badge">${b}</span>`).join(' ');
+  return badges.map(b => `<span class="project-badge">${escapeHtml(b)}</span>`).join(' ');
 }
 
 export { PROJECT_CATALOG, CATEGORY_DEFINITIONS, DEFAULT_PROJECT_ORDER, getProjects, getProject, generateBadges };

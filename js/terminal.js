@@ -4,6 +4,29 @@
 import { getProjects, getProject, generateBadges } from './project-catalog.js';
 import MeshWatchAPI from './meshwatch-api.js';
 import AIAssistant from './ai-assistant.js';
+import { escapeHtml, normalizeSlug } from './utils/helpers.js';
+
+// Lazy import VisualEffects for matrix Easter egg
+let _visualEffects = null;
+function getVisualEffects() {
+  if (!_visualEffects && typeof document !== 'undefined') {
+    // eslint-disable-next-line no-unused-vars
+    import('./visual-effects.js').then(m => { _visualEffects = m.default || m; });
+  }
+  return _visualEffects;
+}
+
+/** Validate URL - only allow safe protocols, return fallback for unsafe values */
+function validateUrl(url, fallback = '#') {
+  if (!url || typeof url !== 'string' || url.trim() === '') return fallback;
+  try {
+    const parsed = new URL(url);
+    if (['http:', 'https:'].includes(parsed.protocol)) {
+      return url;
+    }
+  } catch { /* invalid URL */ }
+  return fallback;
+}
 
 class Terminal {
   constructor() {
@@ -14,16 +37,40 @@ class Terminal {
     this.commandHistory = [
       'help', 'projects', 'project', 'skills', 'experience', 'education',
       'resume', 'about', 'contact', 'status', 'minecraft', 'ai',
-      'demo', 'clear', 'theme'
+      'demo', 'clear', 'theme', 'matrix'
     ];
     this.announcementEl = null;
+    this._announcementTimeout = null;
     this.isDemoMode = false;
     this.demoInterval = null;
     this.currentProjectIndex = 0;
     this._meshwatchAPI = null;
     this._aiAssistant = null;
+    this.config = { demoMode: { cycleIntervalMs: 4000 } }; // Default config
 
-    this.init();
+    // Load config in browser, skip in Node.js test environment
+    if (typeof window !== 'undefined') {
+      this.loadConfig().then(() => this.init());
+    } else {
+      // In Node.js, init immediately without config
+      this.init();
+    }
+  }
+
+  async loadConfig() {
+    try {
+      const resp = await fetch('/config/career-fair.json');
+      if (resp.ok) {
+        const cfg = await resp.json();
+        this.config = cfg;
+        // Merge demoMode defaults
+        if (cfg.demoMode?.cycleIntervalMs) {
+          this.config.demoMode.cycleIntervalMs = cfg.demoMode.cycleIntervalMs;
+        }
+      }
+    } catch (e) {
+      console.warn('[Terminal] Config load failed, using defaults');
+    }
   }
 
   get meshwatchAPI() {
@@ -43,13 +90,35 @@ class Terminal {
 
   init() {
     if (this.output) {
-      this.output.innerHTML = '';
+      while (this.output.firstChild) {
+        this.output.removeChild(this.output.firstChild);
+      }
     }
     this.setupAccessibility();
-    this.typewriterEffect(
-      '> Welcome to Chaitanya Kumar\'s portfolio terminal v2.0.0\n',
-      () => this.typewriterEffect('> Type "help" to see available commands\n', () => this.bindEvents())
-    );
+
+    // Render welcome box instantly (no typewriter for box borders - they'd misalign during animation)
+    if (typeof document !== 'undefined' && this.output) {
+      const welcomeLines = [
+        '╔══════════════════════════════════════════════════════╗',
+        '║   Welcome to Eugene Vincent\'s Portfolio Terminal     ║',
+        '║   Full Stack Engineer | Azure DevOps | SRE          ║',
+        '╚══════════════════════════════════════════════════════╝'
+      ];
+
+      welcomeLines.forEach(line => {
+        const div = document.createElement('div');
+        div.className = 'output-line';
+        div.textContent = line;
+        this.output.appendChild(div);
+      });
+
+      this.scrollToBottom();
+    }
+
+    // Now typewriter the prompt (only in browser)
+    if (typeof document !== 'undefined') {
+      this.typewriterEffect('> Type "help" to see available commands\n', () => this.bindEvents());
+    }
   }
 
   setupAccessibility() {
@@ -70,6 +139,22 @@ class Terminal {
   handleTerminalKeydown(e) {
     if (e.key === 'Tab') return;
     if (document.activeElement === this.input) return;
+    
+    // Arrow navigation for command history when terminal output area has focus
+    if (e.key === 'ArrowUp' && this.history.length > 0) {
+      e.preventDefault();
+      this.historyIndex = Math.min(this.historyIndex + 1, this.history.length - 1);
+      this.input.value = this.history[this.history.length - 1 - this.historyIndex];
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (this.historyIndex > 0) {
+        this.historyIndex--;
+        this.input.value = this.history[this.history.length - 1 - this.historyIndex];
+      } else {
+        this.historyIndex = -1;
+        this.input.value = '';
+      }
+    }
   }
 
   bindEvents() {
@@ -83,6 +168,9 @@ class Terminal {
             e.preventDefault();
             this.input.focus();
             this.announceMessage('Command input focused');
+          } else if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+            e.preventDefault();
+            this.clearTerminal();
           }
         });
 
@@ -131,7 +219,8 @@ class Terminal {
     if (typeof document === 'undefined' || !this.output) return;
     const line = document.createElement('div');
     line.className = 'output-line command';
-    line.innerHTML = `<span class="prompt">$</span> ${command}`;
+    line.setAttribute('data-prompt', '[eugene@homelab ~]$');
+    line.textContent = command;
     this.output.appendChild(line);
   }
 
@@ -161,12 +250,18 @@ class Terminal {
           this.showContact();
           break;
         case 'clear':
-          if (typeof document !== 'undefined' && this.output) {
-            this.output.innerHTML = '';
-          }
+          this.clearTerminal();
           break;
         case 'theme':
-          this.toggleTheme();
+          if (args === 'retro') {
+            document.body.classList.add('theme-retro');
+            this.log('\u2705 Theme set to retro mode', 'success');
+          } else if (args === 'synthwave') {
+            document.body.classList.remove('theme-retro');
+            this.log('\u266F Theme set to synthwave mode', 'success');
+          } else {
+            this.toggleTheme();
+          }
           break;
         case 'experience':
           this.showExperience(args);
@@ -193,13 +288,16 @@ class Terminal {
           this.startDemoMode();
         }
         break;
+      case 'matrix':
+        this.toggleMatrix(args);
+        break;
       default:
         this.log(`Unknown command: ${cmd}`, 'warning');
       }
     } catch (error) {
-      console.error('Terminal command error:', error);
+      console.error('[Terminal] Command error:', error.name, '-', error.message);
       this.log(`\n⚡ System error: ${error.message || 'An unexpected error occurred'}`, 'warning');
-      this.log('Command execution interrupted. Try "help" for available commands.', 'info');
+      this.log('Try "help" for available commands.', 'info');
     }
   }
 
@@ -212,14 +310,15 @@ class Terminal {
       { cmd: 'experience [level]', desc: 'Show work experience (senior/mid/junior)' },
       { cmd: 'education', desc: 'Show education background' },
       { cmd: 'resume', desc: 'Download resume text format' },
-      { cmd: 'about', desc: 'About Chaitanya Kumar' },
+      { cmd: 'about', desc: 'About Eugene Vincent' },
       { cmd: 'contact', desc: 'Contact information' },
       { cmd: 'status', desc: 'Show system/live metrics status' },
       { cmd: 'minecraft', desc: 'Show Minecraft server live stats' },
       { cmd: 'ai <question>', desc: 'Ask AI about your portfolio' },
       { cmd: 'demo [stop]', desc: 'Start/stop auto-cycling project showcase' },
       { cmd: 'clear', desc: 'Clear terminal output' },
-      { cmd: 'theme', desc: 'Toggle synthwave/retro theme' }
+      { cmd: 'theme [retro|synthwave]', desc: 'Set or toggle theme (default: toggle)' },
+      { cmd: 'matrix [on|off]', desc: 'Toggle matrix rain animation (Easter egg)' }
     ];
 
     const a11yShortcuts = [
@@ -228,17 +327,20 @@ class Terminal {
       { key: 'Esc', desc: 'Focus input field' }
     ];
 
+    this.divider();
     this.log('\n=== AVAILABLE COMMANDS ===', 'info');
     helpText.forEach(({ cmd, desc }) => {
       this.log(`  ${cmd.padEnd(20)} - ${desc}`, 'success');
     });
     this.log('============================\n', 'info');
+    this.divider();
 
     this.log('=== KEYBOARD SHORTCUTS ===', 'info');
     a11yShortcuts.forEach(({ key, desc }) => {
       this.log(`  ${key.padEnd(10)} - ${desc}`, 'success');
     });
     this.log('===========================\n', 'info');
+    this.divider();
 
     this.log('=== PROJECT CATEGORIES ===', 'info');
     const categories = ['cloud', 'devops', 'iot', 'web'];
@@ -269,18 +371,18 @@ class Terminal {
         const metricsHTML = this.formatProjectMetrics(project);
 
         card.innerHTML = `
-          <div class="project-name">\u{1f4e6} ${project.name}</div>
+          <div class="project-name">\u{1f4e6} ${escapeHtml(project.name)}</div>
           <div class="project-badges">${badgesHTML}</div>
-          <div class="project-desc">${project.description.substring(0, 120)}...</div>
-          <div class="project-category">Category: ${project.category.toUpperCase()}</div>
+          <div class="project-desc">${escapeHtml(project.description.substring(0, 120))}...</div>
+          <div class="project-category">Category: ${escapeHtml(project.category.toUpperCase())}</div>
           ${metricsHTML}
-          <a href="${project.githubUrl || '#'}" target="_blank" class="project-link">View on GitHub \u279C</a>
+          <a href="${validateUrl(project.githubUrl)}" target="_blank" rel="noopener noreferrer" class="project-link">View on GitHub \u279C</a>
         `;
         this.output.appendChild(card);
       });
     }
 
-    this.log('\n\U0001f461 Tip: Type "project <name>" for a deep-dive into any project\n', 'info');
+    this.log('\n📡 Tip: Type "project <name>" for a deep-dive into any project\n', 'info');
   }
 
   formatProjectMetrics(project) {
@@ -290,7 +392,7 @@ class Terminal {
 
     const metricItems = metrics.map(([key, value]) => {
       const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
-      return `${label}: ${value}`;
+      return `${label}: ${escapeHtml(String(value))}`;
     }).join(' | ');
 
     return `<div class="project-metrics">${metricItems}</div>`;
@@ -308,9 +410,9 @@ class Terminal {
           card.className = 'output-line project-card';
           const badgesHTML = generateBadges(project.badges);
           card.innerHTML = `
-            <div class="project-name">\u{1f4e6} ${project.name}</div>
+            <div class="project-name">\u{1f4e6} ${escapeHtml(project.name)}</div>
             <div class="project-badges">${badgesHTML}</div>
-            <div class="project-desc">${project.description.substring(0, 100)}...</div>
+            <div class="project-desc">${escapeHtml(project.description.substring(0, 100))}...</div>
           `;
           this.output.appendChild(card);
         });
@@ -318,11 +420,11 @@ class Terminal {
       return;
     }
 
-    const project = getProject(identifier);
+    const project = getProject(normalizeSlug(identifier));
 
     if (!project) {
       this.log(`\n\u274C Project "${identifier}" not found.`, 'warning');
-      this.log('Available projects: meshwatch, minecraft-monitoring, cs211, career-portal, monitoring, azure-functions\n', 'info');
+      this.log('Available projects: meshwatch, minecraft-monitoring, monitoring, azure-functions, career-portal\n', 'info');
       return;
     }
 
@@ -334,22 +436,22 @@ class Terminal {
     card.className = 'output-line project-card';
 
     const badgesHTML = generateBadges(project.badges);
-    const techStackHTML = project.techStack.map(t => `<li>\u2022 ${t.name} \u2014 ${t.level}</li>`).join('');
+    const techStackHTML = project.techStack.map(t => `<li>\u2022 ${escapeHtml(t.name)} \u2014 ${escapeHtml(t.level)}</li>`).join('');
     const metricsHTML = this.formatProjectMetrics(project);
-    const achievementsHTML = project.keyAchievements.map(a => `<li style="margin: 0.25rem 0;">   \u2713 ${a}</li>`).join('');
+    const achievementsHTML = project.keyAchievements.map(a => `<li style="margin: 0.25rem 0;">   \u2713 ${escapeHtml(a)}</li>`).join('');
 
     let linksHTML = '';
     if (project.githubUrl) {
-      linksHTML += `<a href="${project.githubUrl}" target="_blank" class="project-link">GitHub \u279C</a> `;
+      linksHTML += `<a href="${validateUrl(project.githubUrl)}" target="_blank" rel="noopener noreferrer" class="project-link">GitHub \u279C</a> `;
     }
     if (project.liveUrl) {
-      linksHTML += `<a href="${project.liveUrl}" target="_blank" class="project-link">Live Dashboard \u279C</a>`;
+      linksHTML += `<a href="${validateUrl(project.liveUrl)}" target="_blank" rel="noopener noreferrer" class="project-link">Live Dashboard \u279C</a>`;
     }
 
     card.innerHTML = `
-      <div class="project-name">\u{1f4e6} ${project.name}</div>
+      <div class="project-name">\u{1f4e6} ${escapeHtml(project.name)}</div>
       <div class="project-badges">${badgesHTML}</div>
-      <div class="project-desc">${project.description}</div>
+      <div class="project-desc">${escapeHtml(project.description)}</div>
       <div style="margin-top: 1rem;"><strong>TECH STACK</strong></div>
       <ul style="list-style: none; padding-left: 0.5rem;">${techStackHTML}</ul>
       ${metricsHTML ? `<div class="project-metrics">${metricsHTML}</div>` : ''}
@@ -364,7 +466,7 @@ class Terminal {
       linksCard.className = 'output-line project-card';
       let linksContent = linksHTML;
       if (project.demoNote) {
-        linksContent += `<br><em style="color: #8a8;">${project.demoNote}</em>`;
+        linksContent += `<br><em style="color: #8a8;">${escapeHtml(project.demoNote)}</em>`;
       }
       linksCard.innerHTML = linksContent;
       this.output.appendChild(linksCard);
@@ -380,7 +482,6 @@ class Terminal {
     const skills = {
       cloud: [
         'Azure (Blob Storage, Functions, AKS)',
-        'AWS (EC2, S3, Lambda)',
         'Cloudflare (DNS, CDN, Workers)',
         'Docker & Kubernetes (k3s, Istio)'
       ],
@@ -421,9 +522,10 @@ class Terminal {
 
   showAbout() {
     if (typeof document === 'undefined' || !this.output) return;
+    this.divider();
     const aboutText = [
       '',
-      '\u{1f44b} Hello! I\'m Chaitanya Kumar',
+      '\u{1f44b} Hello! I\'m Eugene Vincent',
       '\u{1f4cf} Aurora, IL, USA',
       '',
       'Full Stack Engineer passionate about cloud-native architectures',
@@ -433,7 +535,7 @@ class Terminal {
       '\u{1f3af} What I do:',
       '   \u2022 Design scalable microservices with Istio & OpenTelemetry',
       '   \u2022 Build React/Next.js frontends with progressive enhancement',
-      '   \u2022 Deploy serverless APIs on Azure/AWS',
+      '   \u2022 Deploy serverless APIs on Azure',
       '   \u2022 Automate CI/CD pipelines with GitHub Actions',
       '',
       '\u{1f4a1} Recently:',
@@ -442,9 +544,11 @@ class Terminal {
       '   \u2022 Created FAANG-quality portfolio with synthwave terminal theme',
       '',
       '\u{1f393} Currently exploring:',
+      '   \u2022 Training and fine-tuning LLMs on local hardware for cost-effective AI',
+      '   \u2022 Reducing inference costs by running models locally via Ollama',
+      '   \u2022 Automating workflows with local AI agents to save time and compute',
       '   \u2022 WASM for browser-based compute',
       '   \u2022 Edge computing with Cloudflare Workers',
-      '   \u2022 AI-powered DevOps (AIOps)',
       '',
       '========================\n'
     ];
@@ -462,34 +566,35 @@ class Terminal {
 
   showContact() {
     if (typeof document === 'undefined' || !this.output) return;
+    this.divider();
     this.log('\n=== CONTACT ===\n', 'info');
-    this.log('\u{1f4e7} Email: chaitanya.kumar@example.com', 'success');
+    this.log('\u{1f4e7} Email: eugene.vince55@gmail.com', 'success');
     this.log('\u{1f517} GitHub: github.com/chaitea321', 'success');
-    this.log('\u{1f4bc} LinkedIn: linkedin.com/in/chaitea321', 'success');
+    this.log('\u{1f4bc} LinkedIn: linkedin.com/in/eugene-vincent-42472024b', 'success');
     this.log('\u{1f310} Portfolio: chai-homelab.com', 'success');
     this.log('========================\n', 'info');
   }
 
   showExperience(level = '') {
     if (typeof document === 'undefined' || !this.output) return;
-    this.log('\n=== WORK EXPERIENCE ===\n', 'info');
+    this.log('\n=== HOMELAB PROJECTS & EXPERIENCE ===\n', 'info');
 
     const experience = [
       {
         role: 'Full Stack Engineer',
-        company: 'Freelance / Personal Projects',
+        company: 'Homelab Projects (2023 - Present)',
         period: '2023 - Present',
         level: 'senior',
         details: [
           'Built MeshWatch - cost-optimized service mesh observability on k3s',
           'Integrated Ollama Phi-3 for automated incident analysis',
           'Reduced monitoring costs by 60% vs serverless alternatives',
-          'Deployed cloud-native architectures on Azure & AWS'
+          'Deployed cloud-native architectures on Azure'
         ]
       },
       {
         role: 'DevOps Engineer',
-        company: 'Personal Homelab Projects',
+        company: 'Homelab Projects (2022 - Present)',
         period: '2022 - Present',
         level: 'mid',
         details: [
@@ -500,15 +605,15 @@ class Terminal {
         ]
       },
       {
-        role: 'Software Engineering Intern',
-        company: 'Academic Projects',
-        period: '2023 - 2024',
+        role: 'Software Engineering Student',
+        company: 'University of Illinois (2024 - 2028)',
+        period: '2024 - 2028',
         level: 'junior',
         details: [
-          'Built full-stack web applications for coursework',
-          'Developed real-time collaboration features',
-          'Implemented RESTful APIs with Node.js and Express',
-          'Created responsive frontends with React and TypeScript'
+          'Self-directed homelab projects alongside coursework',
+          'Applied academic knowledge to real-world infrastructure',
+          'Built and maintained production-grade monitoring systems',
+          'Developed full-stack applications with React and TypeScript'
         ]
       }
     ];
@@ -525,10 +630,10 @@ class Terminal {
         const card = document.createElement('div');
         card.className = 'output-line project-card';
         card.innerHTML = `
-          <div class="project-name">\u{1f3e2} ${exp.role}</div>
-          <div class="project-desc">${exp.company} | ${exp.period}</div>
+          <div class="project-name">\u{1f3e2} ${escapeHtml(exp.role)}</div>
+          <div class="project-desc">${escapeHtml(exp.company)} | ${escapeHtml(exp.period)}</div>
           <ul style="list-style: none; padding-left: 1rem;">
-            ${exp.details.map(d => `<li style="margin: 0.25rem 0;">   \u2022 ${d}</li>`).join('')}
+            ${exp.details.map(d => `<li style="margin: 0.25rem 0;">   \u2022 ${escapeHtml(d)}</li>`).join('')}
           </ul>
         `;
         this.output.appendChild(card);
@@ -545,8 +650,8 @@ class Terminal {
     const education = [
       {
         degree: 'Bachelor of Science in Computer Science',
-        institution: 'University of Illinois (CS211)',
-        year: '2023 - 2024',
+        institution: 'University of Illinois',
+        year: '2024 - 2028 (Expected)',
         details: [
           'Full-stack web development',
           'Data structures and algorithms',
@@ -556,11 +661,11 @@ class Terminal {
       },
       {
         degree: 'Certifications & Self-Study',
-        institution: 'Online Platforms',
+        institution: 'Self-Directed Learning',
         year: '2022 - Present',
         details: [
-          'Kubernetes Administration (CKA preparation)',
-          'Cloud Architecture (Azure/AWS)',
+          'AZ-900: Azure Fundamentals (Certified)',
+          'Cloud Architecture (Azure)',
           'DevOps best practices and CI/CD',
           'Service mesh with Istio and Linkerd'
         ]
@@ -571,10 +676,10 @@ class Terminal {
       const card = document.createElement('div');
       card.className = 'output-line project-card';
       card.innerHTML = `
-        <div class="project-name">\u{1f393} ${edu.degree}</div>
-        <div class="project-desc">${edu.institution} | ${edu.year}</div>
+        <div class="project-name">\u{1f393} ${escapeHtml(edu.degree)}</div>
+        <div class="project-desc">${escapeHtml(edu.institution)} | ${escapeHtml(edu.year)}</div>
         <ul style="list-style: none; padding-left: 1rem;">
-          ${edu.details.map(d => `<li style="margin: 0.25rem 0;">   \u2022 ${d}</li>`).join('')}
+          ${edu.details.map(d => `<li style="margin: 0.25rem 0;">   \u2022 ${escapeHtml(d)}</li>`).join('')}
         </ul>
       `;
       this.output.appendChild(card);
@@ -585,79 +690,105 @@ class Terminal {
 
   showResume() {
     if (typeof document === 'undefined' || !this.output) return;
-    this.log('\n=== RESUME TEXT ===\n', 'info');
+    this.divider();
+    this.log('\n=== RESUME ===\n', 'info');
 
     const resumeText = `
-CHAITANYA KUMAR
-Full Stack Engineer | Kubernetes Enthusiast
-${'\u{1f4cf}'} Aurora, IL, USA
-${'\u{1f4e7}'} chaitanya.kumar@example.com
-${'\u{1f517}'} github.com/chaitea321
-${'\u{1f4bc}'} linkedin.com/in/chaitea321
-
-EMPLOYMENT HISTORY
-----------------------------------------------------------
-Full Stack Engineer | Freelance / Personal Projects (2023 - Present)
-  \u2022 Built MeshWatch - cost-optimized service mesh observability on k3s
-  \u2022 Integrated Ollama Phi-3 for automated incident analysis
-  \u2022 Reduced monitoring costs by 60% vs serverless alternatives
-  \u2022 Deployed cloud-native architectures on Azure & AWS
-
-DevOps Engineer | Personal Homelab Projects (2022 - Present)
-  \u2022 Managed k3s Kubernetes cluster with Istio service mesh
-  \u2022 Implemented Prometheus/Grafana/Loki monitoring stack
-  \u2022 Automated deployments with GitHub Actions CI/CD
-  \u2022 Configured Cloudflare DNS, CDN, and SSL termination
-
-Software Engineering Intern | Academic Projects (2023 - 2024)
-  \u2022 Built full-stack web applications for coursework
-  \u2022 Developed real-time collaboration features
-  \u2022 Implemented RESTful APIs with Node.js and Express
-  \u2022 Created responsive frontends with React and TypeScript
+EUGENE VINCENT
+Full Stack Engineer | Azure DevOps | Software Reliability
+${'\u{1f4cf}'} Aurora, IL, USA | ${'\u{1f4e7}'} eugene.vince55@gmail.com
+${'\u{1f517}'} github.com/chaitea321  ${'\u{1f4bc}'} linkedin.com/in/eugene-vincent-42472024b
 
 EDUCATION
 ----------------------------------------------------------
-B.S. Computer Science | University of Illinois (2023 - 2024)
-  \u2022 Full-stack web development
-  \u2022 Data structures and algorithms
-  \u2022 Software engineering principles
-  \u2022 Database systems and cloud computing
+B.S. Computer Science (2024 - 2028, Expected)
+University of Illinois
+  \u2022 Full-stack web development | Data structures & algorithms
+  \u2022 Software engineering principles | Database systems
+  \u2022 Cloud computing | Distributed systems
 
-Certifications & Self-Study (2022 - Present)
-  \u2022 Kubernetes Administration (CKA preparation)
-  \u2022 Cloud Architecture (Azure/AWS)
-  \u2022 DevOps best practices and CI/CD
+CERTIFICATIONS
+----------------------------------------------------------
+AZ-900: Microsoft Azure Fundamentals (Certified)
+Self-Directed Learning (2022 - Present)
+  \u2022 Cloud Architecture & DevOps best practices
   \u2022 Service mesh with Istio and Linkerd
+
+HOMELAB PROJECTS
+----------------------------------------------------------
+MeshWatch | Service Mesh Observability Platform
+  \u2022 Cost-optimized platform on k3s Kubernetes with Istio mTLS
+  \u2022 Integrated Ollama Phi-3 AI for automated incident analysis
+  \u2022 Reduced monitoring costs by 60% ($5.12/mo vs $7+/mo serverless)
+  \u2022 Full observability: Prometheus, Grafana, Loki, Tempo
+
+Minecraft Server Monitoring | IoT / Gaming
+  \u2022 Istio service mesh observability with JMX + RCON exporters
+  \u2022 Prometheus metrics (TPS, heap, GC pauses) + Grafana dashboards
+  \u2022 Discord bot with 10 slash commands for server control
+  \u2022 AI-powered lag analysis via Ollama Phi-3
+
+Monitoring Stack | DevOps
+  \u2022 ArgoCD App of Apps pattern for multi-namespace management
+  \u2022 External Secrets Operator with Azure Key Vault backend
+  \u2022 cert-manager with Let's Encrypt TLS auto-provisioning
+  \u2022 20-panel Grafana dashboard with Loki log aggregation
+
+Azure Functions | Serverless
+  \u2022 Health checker function with 15-minute cron interval
+  \u2022 Service Bus trigger for incident event processing
+  \u2022 Deduplication windows to prevent alert storms
+
+Software Reliability Engineering Focus
+  \u2022 Training and fine-tuning LLMs on local hardware for cost-effective AI
+  \u2022 Reducing inference costs by running models locally via Ollama
+  \u2022 Automating workflows with local AI agents to save time and compute
 
 SKILLS
 ----------------------------------------------------------
-Cloud: Azure, AWS, Cloudflare, Docker, Kubernetes
-Frontend: React.js, Next.js, TypeScript, CSS3, Tailwind
-Backend: Node.js, Express, Python, FastAPI, GraphQL, REST
-DevOps: GitHub Actions, Terraform, Prometheus, Grafana, Loki
+Cloud: Azure (Functions, Blob Storage, AKS), Cloudflare, Docker, Kubernetes
+Frontend: React.js, Next.js, TypeScript, CSS3, Tailwind, PWA Development
+Backend: Node.js, Express, Python, FastAPI, GraphQL, REST APIs
+DevOps: GitHub Actions, Terraform, Prometheus, Grafana, Loki, Istio
+Reliability: Distributed Tracing, SLO Monitoring, Incident Response
 
 PROJECTS
 ----------------------------------------------------------
-meshwatch - Service mesh observability platform (*28)
+meshwatch - Service mesh observability (*28 stars)
   \u2022 Istio-based monitoring with real-time metrics
   \u2022 Cost-optimized vs serverless alternatives
   \u2022 AI-powered incident analysis with Ollama Phi-3
 
-CS211 - Course management system (*12)
-  \u2022 Full-stack web application with real-time updates
-  \u2022 React frontend with Node.js/Express backend
-  \u2022 PostgreSQL database with Redis caching
+minecraft-monitoring - Gaming server observability
+  \u2022 JMX + RCON exporters for real-time metrics
+  \u2022 Discord bot with 10 slash commands
+  \u2022 AI-powered lag analysis and alerting
 
+monitoring - Production monitoring platform
+  \u2022 ArgoCD GitOps with cert-manager TLS
+  \u2022 External Secrets Operator + Azure Key Vault
+  \u2022 20-panel Grafana dashboards + Loki logs
+
+azure-functions - Serverless API gateway
+  \u2022 Health checker + Service Bus incident processing
+  \u2022 Discord webhook integration
+  \u2022 Pydantic validation models
+
+career-portal - Terminal portfolio (you are here)
+  \u2022 Interactive terminal with 14+ commands and autocomplete
+  \u2022 PWA support with service worker offline caching
+  \u2022 WCAG 2.1 accessible (ARIA, keyboard nav, screen reader)
 ${'='.repeat(40)}
 Generated from chai-homelab.com portfolio terminal
     `.trim();
 
     this.log(resumeText, 'default');
-    this.log('\n\U0001f4a1 Tip: Copy this text or visit github.com/chaitea321 for PDF', 'info');
+    this.log('\n💠 Tip: Copy this text or visit github.com/chaitea321 for PDF', 'info');
   }
 
   async showStatus() {
     if (typeof document === 'undefined' || !this.output) return;
+    this.divider();
     this.log('\n=== SYSTEM STATUS ===\n', 'info');
 
     try {
@@ -669,7 +800,7 @@ Generated from chai-homelab.com portfolio terminal
         // Try to fetch live metrics from Azure Functions
         const status = await this.meshwatchAPI.getMetrics();
         if (status.success) {
-          this.log(`MeshWatch: ${status.data || 'Metrics loaded via Azure Functions'}`, 'success');
+          this.log('MeshWatch: \u2705 Live (Azure Functions)', 'success');
           this.log(`  Pods deployed: ${status.podsDeployed || 15} | Services: ${status.servicesMonitored || 5}`, 'info');
           this.log(`  Cost: $${status.monthlyCost || '5.12'}/month (60% savings vs serverless)`, 'success');
           this.log(`  AI Analysis: ${status.aiAnalysis || 'Ollama Phi-3 ready for incident analysis'}`, 'info');
@@ -706,35 +837,34 @@ Generated from chai-homelab.com portfolio terminal
     this.log('\n=== MINECRAFT SERVER STATUS ===\n', 'info');
 
     try {
-      const isOnline = navigator.onLine;
-
-      if (isOnline) {
-        // Try to fetch live metrics from Azure Functions
-        const status = await this.meshwatchAPI.getMinecraftMetrics();
-        if (status.success) {
-          this.log(`Server: ${status.data || 'Minecraft Server 1.21.4'}`, 'success');
-          this.log(`TPS: ${status.tps || 20} | Players: ${status.players || 3}`, 'info');
-          this.log(`Uptime: ${status.uptime || '99.8%'}`, 'success');
-          this.log(`Discord Alerts Today: ${status.discordAlertsToday || 0}`, 'info');
-          this.log(`Last GC Pause: ${status.lastGcPause || '45ms'}`, 'info');
-        } else {
-          this.log('Azure Functions not yet deployed, showing demo data...', 'warning');
-          this.showMinecraftDemo();
+      // Load stats from local JSON file (updated every 10 min via cron)
+      const resp = await fetch('/config/minecraft-stats.json');
+      if (resp.ok) {
+        const stats = await resp.json();
+        this.log(`Server: ${stats.server.name} (${stats.server.version})`, 'success');
+        this.log(`Runtime: ${stats.server.javaVersion}`, 'info');
+        this.log(`TPS: ${stats.metrics.tps} | Players: ${stats.metrics.players}/${stats.metrics.maxPlayers}`, 'info');
+        this.log(`Uptime: ${stats.metrics.uptime} | Last GC Pause: ${stats.metrics.lastGcPause}`, 'success');
+        this.log(`Discord Alerts Today: ${stats.monitoring.discordAlertsToday} | RCON Latency: ${stats.monitoring.rconLatency}`, 'info');
+        this.log(`Heap: ${stats.metrics.heapUsedMB}MB / ${stats.metrics.heapMaxMB}MB`, 'info');
+        if (stats.recentChanges && stats.recentChanges.length > 0) {
+          this.log('\nRecent Changes:', 'success');
+          stats.recentChanges.forEach(change => {
+            this.log(`  \u2022 ${change}`, 'info');
+          });
         }
       } else {
-        this.log('Offline mode - showing cached Minecraft metrics', 'warning');
-        this.showMinecraftDemo();
+        throw new Error('Stats file not found');
       }
     } catch (error) {
-      console.error('Minecraft status error:', error);
-      this.log('Error fetching Minecraft status. Showing cached data.', 'warning');
-      this.showMinecraftDemo();
+      console.error('Minecraft stats error:', error);
+      this.showMinecraftFallback();
     }
 
     this.log('\n========================\n', 'info');
   }
 
-  showMinecraftDemo() {
+  showMinecraftFallback() {
     if (typeof document === 'undefined' || !this.output) return;
     this.log('Server: Minecraft PaperMC 1.21.4 (Java 21)', 'success');
     this.log('TPS: 20 | Players: 3', 'info');
@@ -814,11 +944,60 @@ Generated from chai-homelab.com portfolio terminal
     this.log('', 'default');
   }
 
+  toggleMatrix(arg = '') {
+    if (typeof document === 'undefined') return;
+
+    const matrixColumns = document.querySelectorAll('.matrix-column');
+
+    if (arg === 'on') {
+      // Enable matrix rain by setting columns to visible
+      matrixColumns.forEach(col => col.style.display = '');
+      this.log('\u2705 Matrix rain enabled! (Type "matrix off" to disable)', 'success');
+    } else if (arg === 'off') {
+      // Disable matrix rain by hiding columns
+      matrixColumns.forEach(col => col.style.display = 'none');
+      this.log('\u274c Matrix rain disabled', 'warning');
+    } else {
+      // Toggle based on current state
+      const hasMatrix = matrixColumns.length > 0;
+      if (hasMatrix) {
+        matrixColumns.forEach(col => col.style.display = 'none');
+        this.log('\u274c Matrix rain disabled', 'warning');
+      } else {
+        // Check if matrix columns exist but are hidden, or create fresh ones
+        const allCols = document.querySelectorAll('.matrix-column');
+        if (allCols.length > 0) {
+          allCols.forEach(col => col.style.display = '');
+          this.log('\u2705 Matrix rain enabled! (Type "matrix off" to disable)', 'success');
+        } else {
+          // No columns exist - trigger visual effects to create them
+          if (typeof window !== 'undefined') {
+            import('./visual-effects.js').then(() => {
+              const cols = document.querySelectorAll('.matrix-column');
+              if (cols.length > 0) {
+                this.log('\u2705 Matrix rain enabled! (Type "matrix off" to disable)', 'success');
+              } else {
+                this.log('Matrix columns not found. Visual effects may need to be loaded first.', 'warning');
+              }
+            });
+          }
+        }
+      }
+    }
+  }
+
+  clearTerminal() {
+    if (!this.output) return;
+    while (this.output.firstChild) {
+      this.output.removeChild(this.output.firstChild);
+    }
+  }
+
   toggleTheme() {
     if (typeof document === 'undefined') return;
     document.body.classList.toggle('theme-retro');
     const isRetro = document.body.classList.contains('theme-retro');
-    this.log(`\n${isRetro ? '\u2705' : '\u26A0'} Theme toggled to ${isRetro ? 'retro' : 'synthwave'} mode`, 'info');
+    this.log(`\n${isRetro ? '\u2705' : '\u266F'} Theme toggled to ${isRetro ? 'retro' : 'synthwave'} mode`, 'info');
   }
 
   // ---- Demo Mode ----
@@ -856,8 +1035,8 @@ Generated from chai-homelab.com portfolio terminal
 
       this.currentProjectIndex++;
 
-      // Schedule next project after delay (shorter if demo mode)
-      const delay = 4000; // 4 seconds per project in demo mode
+      // Schedule next project after delay (config-driven, falls back to 4000ms)
+      const delay = this.config?.demoMode?.cycleIntervalMs || 4000;
       this.demoInterval = setTimeout(runNext, delay);
     };
 
@@ -880,18 +1059,33 @@ Generated from chai-homelab.com portfolio terminal
 
   // ---- Core Methods ---
 
-  log(message, type = 'default') {
+ log(message, type = 'default') {
     if (typeof document === 'undefined' || !this.output) return;
     const line = document.createElement('div');
     line.className = `output-line ${type}`;
     line.textContent = message;
     this.output.appendChild(line);
+
+    // Cap output at 500 lines to prevent DOM bloat on long sessions
+    while (this.output.children.length > 500) {
+      this.output.removeChild(this.output.firstChild);
+    }
+
     this.scrollToBottom();
 
     // Announce to screen readers (first and last lines only to avoid spam)
     if (this.announcementEl && message.trim() && !message.startsWith('   ')) {
       void this.announceMessage(message.trim());
     }
+  }
+
+  // Print a section divider line for visual grouping
+  divider() {
+    if (typeof document === 'undefined' || !this.output) return;
+    const line = document.createElement('div');
+    line.className = 'output-line section-divider';
+    this.output.appendChild(line);
+    this.scrollToBottom();
   }
 
   announceMessage(message) {
@@ -942,19 +1136,38 @@ Generated from chai-homelab.com portfolio terminal
     });
   }
 
-  autocomplete() {
+ autocomplete() {
     if (typeof document === 'undefined' || !this.input) return;
-    const value = this.input.value;
+    const value = this.input.value.trim();
+
+    // Empty input with Tab shows all commands available
+    if (!value) {
+      this.log('\nAvailable commands: ' + this.commandHistory.join(', '), 'info');
+      return;
+    }
+
     const matches = this.commandHistory.filter(cmd =>
       cmd.startsWith(value.toLowerCase())
     );
 
     if (matches.length === 1) {
       this.input.value = matches[0];
+      // Brief visual feedback for successful autocomplete
+      this.input.style.boxShadow = '0 0 8px var(--neon-cyan)';
+      setTimeout(() => { this.input.style.boxShadow = ''; }, 300);
     } else if (matches.length > 1) {
-      this.log('\nMatches: ' + matches.join(', '), 'info');
+      this.log('\nMatches: ' + matches.join('  '), 'info');
+      // Keep cursor at end of input so user can continue typing
+    } else {
+      this.log('\nNo matches for "' + value + '". Try Tab to see available commands.', 'warning');
     }
   }
 }
 
 export default Terminal;
+
+// Self-instantiate the terminal (matches pattern used by audio, performance, visual-effects)
+if (typeof window !== 'undefined') {
+  const term = new Terminal();
+  window.terminal = term; // Expose for debugging
+}
