@@ -1,4 +1,4 @@
-// Performance Monitor - Tracks load times and renders metrics
+// Performance Monitor - Tracks real browser load metrics via Navigation Timing API
 class PerformanceMonitor {
   constructor() {
     this.metrics = new Map();
@@ -8,36 +8,16 @@ class PerformanceMonitor {
   init() {
     if (typeof performance === 'undefined' || typeof window === 'undefined') return;
     
-    // Mark initial paint
-    if (performance.mark) {
-      performance.mark('portfolio-init-start');
-      
-      window.addEventListener('load', () => {
-        performance.mark('portfolio-load-end');
-        this.measure('pageLoad', 'portfolio-init-start', 'portfolio-load-end');
-        this.reportMetrics();
-      });
+    const nav = performance.getEntriesByType('navigation')[0];
+    if (!nav) {
+      console.warn('[PerformanceMonitor] Navigation Timing API not available');
+      return;
     }
-  }
-  
-  mark(name) {
-    if (typeof performance !== 'undefined' && performance.mark) {
-      performance.mark(name);
-    }
-  }
-  
-  measure(name, start, end) {
-    if (typeof performance !== 'undefined' && performance.measure) {
-      try {
-        performance.measure(name, start, end);
-        const entries = performance.getEntriesByName(name);
-        if (entries.length > 0) {
-          this.metrics.set(name, entries[0].duration);
-        }
-      } catch (error) {
-        // Ignore measure errors
-      }
-    }
+    
+    this.metrics.set('TTFB', nav.responseEnd - nav.requestStart);
+    this.metrics.set('DOMContentLoaded', nav.domContentLoadedEventEnd - nav.navigationStart);
+    this.metrics.set('FullLoad', nav.loadEventEnd - nav.navigationStart);
+    this.reportMetrics();
   }
   
   reportMetrics() {

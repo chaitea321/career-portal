@@ -83,7 +83,6 @@ class Terminal {
   get aiAssistant() {
     if (!this._aiAssistant) {
       this._aiAssistant = new AIAssistant();
-      this._aiAssistant.loadConfig();
     }
     return this._aiAssistant;
   }
@@ -838,7 +837,7 @@ Generated from chai-homelab.com portfolio terminal
 
     try {
       // Load stats from local JSON file (updated every 10 min via cron)
-      const resp = await fetch('/config/minecraft-stats.json');
+      const resp = await fetch(`/config/minecraft-stats.json?t=${Date.now()}`);
       if (resp.ok) {
         const stats = await resp.json();
         this.log(`Server: ${stats.server.name} (${stats.server.version})`, 'success');
@@ -876,6 +875,7 @@ Generated from chai-homelab.com portfolio terminal
     this.log('  \u2022 Discord.py Bot - 10 Slash Commands', 'info');
     this.log('  \u2022 Prometheus + Grafana - Real-time Dashboards', 'info');
     this.log('  \u2022 Ollama Phi-3 - AI Lag Analysis', 'info');
+    this.log('\nStats update every 10 minutes via cron job.', 'info');
   }
 
   async askAI(question = '') {

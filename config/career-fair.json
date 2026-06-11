@@ -87,5 +87,11 @@
     "offlineFallbackPage": "/offline.html",
     "cacheAssets": true,
     "installPromptEnabled": true
+  },
+  "minecraftStats": {
+    "updateIntervalMinutes": 10,
+    "source": "cron-updated JSON file",
+    "fallback": "static values in minecraft-stats.json",
+    "description": "Minecraft server metrics updated every 10 minutes via cron job (scripts/update-minecraft-stats.sh)"
   }
 }

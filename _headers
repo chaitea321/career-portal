@@ -1,6 +1,5 @@
 /*
-  Content-Security-Policy: default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com;
-  X-Content-Type: text/html
+  Content-Security-Policy: default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://static.cloudflareinsights.com;
 */
 
 /css/*
@@ -16,5 +15,5 @@
   Content-Type: image/png
 
 /config/*
-  Cache-Control: public, max-age=86400
+  Cache-Control: public, max-age=600
   Content-Type: application/json
