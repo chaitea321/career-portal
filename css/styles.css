@@ -717,12 +717,12 @@ body.theme-retro .terminal-footer {
   left: 50%;
   transform: translate(-50%, -50%);
   width: min(640px, 90vw);
-  background: rgba(10, 10, 20, 0.92);
+  background: var(--palette-bg, rgba(10, 10, 20, 0.92));
   backdrop-filter: blur(16px) saturate(1.4);
   -webkit-backdrop-filter: blur(16px) saturate(1.4);
-  border: 1px solid rgba(188, 19, 254, 0.3);
+  border: 1px solid var(--palette-border, rgba(188, 19, 254, 0.3));
   border-radius: 12px;
-  box-shadow: 0 0 40px rgba(188, 19, 254, 0.15), 0 0 80px rgba(0, 255, 255, 0.05);
+  box-shadow: var(--palette-shadow, 0 0 40px rgba(188, 19, 254, 0.15), 0 0 80px rgba(0, 255, 255, 0.05));
   z-index: 9999;
   overflow: hidden;
   animation: palette-fade-in 0.2s ease-out;
@@ -738,11 +738,11 @@ body.theme-retro .terminal-footer {
   padding: 16px 20px;
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
   font-size: 1rem;
-  color: var(--neon-cyan);
+  color: var(--palette-text, var(--neon-cyan));
   background: transparent;
   border: none;
   outline: none;
-  caret-color: var(--neon-cyan);
+  caret-color: var(--palette-text, var(--neon-cyan));
 }
 
 .command-palette input#palette-search::placeholder {
@@ -768,7 +768,7 @@ body.theme-retro .terminal-footer {
 
 .palette-item:hover,
 .palette-item.focused {
-  background: rgba(188, 19, 254, 0.12);
+  background: var(--palette-hover, rgba(188, 19, 254, 0.12));
 }
 
 .palette-icon {
@@ -780,7 +780,7 @@ body.theme-retro .terminal-footer {
 
 .palette-cmd {
   flex: 1;
-  color: var(--neon-cyan);
+  color: var(--palette-text, var(--neon-cyan));
   font-weight: 600;
 }
 
@@ -790,27 +790,24 @@ body.theme-retro .terminal-footer {
 }
 
 .palette-match {
-  color: var(--neon-pink);
-  text-shadow: 0 0 4px rgba(188, 19, 254, 0.4);
+  color: var(--palette-accent, var(--neon-pink));
+  text-shadow: 0 0 4px var(--palette-accent-shadow, rgba(188, 19, 254, 0.4));
 }
 
 .command-palette input#palette-search:focus + .palette-results,
 .command-palette:focus-within {
-  border-color: rgba(188, 19, 254, 0.5);
-  box-shadow: 0 0 50px rgba(188, 19, 254, 0.2), 0 0 100px rgba(0, 255, 255, 0.08);
+  border-color: var(--palette-border-focus, rgba(188, 19, 254, 0.5));
+  box-shadow: var(--palette-shadow-focus, 0 0 50px rgba(188, 19, 254, 0.2), 0 0 100px rgba(0, 255, 255, 0.08));
 }
 
-/* Retro theme: consolidate palette overrides using inherited variables */
+/* Retro theme: override palette custom properties */
 body.theme-retro .command-palette {
-  background: rgba(10, 8, 4, 0.92);
-  border-color: rgba(255, 140, 0, 0.3);
-  box-shadow: 0 0 40px rgba(255, 140, 0, 0.1), 0 0 80px rgba(184, 115, 41, 0.05);
+  --palette-bg: rgba(10, 8, 4, 0.92);
+  --palette-border: rgba(255, 140, 0, 0.3);
+  --palette-shadow: 0 0 40px rgba(255, 140, 0, 0.1), 0 0 80px rgba(184, 115, 41, 0.05);
+  --palette-hover: rgba(255, 140, 0, 0.1);
+  --palette-text: #ffaa00;
 }
-
-body.theme-retro .palette-cmd { color: #ffaa00; }
-body.theme-retro .palette-match { color: var(--neon-pink); }
-body.theme-retro .palette-item:hover,
-body.theme-retro .palette-item.focused { background: rgba(255, 140, 0, 0.1); }
 
 /* Reduced motion preference */
 @media (prefers-reduced-motion: reduce) {

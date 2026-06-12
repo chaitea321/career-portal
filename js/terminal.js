@@ -5,7 +5,7 @@ import { getProjects, getProject, generateBadges } from './project-catalog.js';
 import MeshWatchAPI from './meshwatch-api.js';
 import AIAssistant from './ai-assistant.js';
 import Achievements from './achievements.js';
-import { escapeHtml, normalizeSlug, COMMAND_ICONS, COMMAND_DESCS, highlightMatch, createPaletteItem, filterCommands } from './utils/helpers.js';
+import { escapeHtml, normalizeSlug, validateUrl, COMMAND_ICONS, COMMAND_DESCS, highlightMatch, createPaletteItem, filterCommands, SKILLS_DATA, PERF_THRESHOLDS, gradePerf, computeOverallGrade } from './utils/helpers.js';
 
 // Lazy import VisualEffects for matrix Easter egg
 let _visualEffects = null;
@@ -15,18 +15,6 @@ function getVisualEffects() {
     import('./visual-effects.js').then(m => { _visualEffects = m.default || m; });
   }
   return _visualEffects;
-}
-
-/** Validate URL - only allow safe protocols, return fallback for unsafe values */
-function validateUrl(url, fallback = '#') {
-  if (!url || typeof url !== 'string' || url.trim() === '') return fallback;
-  try {
-    const parsed = new URL(url);
-    if (['http:', 'https:'].includes(parsed.protocol)) {
-      return url;
-    }
-  } catch { /* invalid URL */ }
-  return fallback;
 }
 
 class Terminal {
@@ -253,7 +241,7 @@ class Terminal {
           this.showAbout();
           break;
         case 'contact':
-          this.showContact();
+          this.showContact(args);
           break;
         case 'clear':
           this.clearTerminal();
@@ -276,7 +264,7 @@ class Terminal {
           this.showEducation(args);
           break;
         case 'resume':
-          this.showResume();
+          this.showResume(args);
           break;
         case 'status':
           this.showStatus();
@@ -397,7 +385,7 @@ class Terminal {
   showProjects(filter = '') {
     this.log('\n=== PROJECTS ===\n', 'info');
 
-    if (typeof document === 'undefined' || !this.output) return;
+    if (this._guard()) return;
 
     const projectList = getProjects(filter, '');
 
@@ -408,13 +396,9 @@ class Terminal {
       this.log(`Found ${projectList.length} project(s):\n`, 'success');
 
       projectList.forEach(project => {
-        const card = document.createElement('div');
-        card.className = 'output-line project-card';
-
         const badgesHTML = generateBadges(project.badges);
         const metricsHTML = this.formatProjectMetrics(project);
-
-        card.innerHTML = `
+        const html = `
           <div class="project-name">\u{1f4e6} ${escapeHtml(project.name)}</div>
           <div class="project-badges">${badgesHTML}</div>
           <div class="project-desc">${escapeHtml(project.description.substring(0, 120))}...</div>
@@ -422,7 +406,7 @@ class Terminal {
           ${metricsHTML}
           <a href="${validateUrl(project.githubUrl)}" target="_blank" rel="noopener noreferrer" class="project-link">View on GitHub \u279C</a>
         `;
-        this.output.appendChild(card);
+        this._card(html);
       });
     }
 
@@ -448,19 +432,17 @@ class Terminal {
       const projects = getProjects();
       this.log('Available projects (type "project <name>" for details):\n', 'success');
 
-      if (typeof document !== 'undefined' && this.output) {
-        projects.forEach(project => {
-          const card = document.createElement('div');
-          card.className = 'output-line project-card';
-          const badgesHTML = generateBadges(project.badges);
-          card.innerHTML = `
-            <div class="project-name">\u{1f4e6} ${escapeHtml(project.name)}</div>
-            <div class="project-badges">${badgesHTML}</div>
-            <div class="project-desc">${escapeHtml(project.description.substring(0, 100))}...</div>
-          `;
-          this.output.appendChild(card);
-        });
-      }
+      if (this._guard()) return;
+
+      projects.forEach(project => {
+        const badgesHTML = generateBadges(project.badges);
+        const html = `
+          <div class="project-name">\u{1f4e6} ${escapeHtml(project.name)}</div>
+          <div class="project-badges">${badgesHTML}</div>
+          <div class="project-desc">${escapeHtml(project.description.substring(0, 100))}...</div>
+        `;
+        this._card(html);
+      });
       return;
     }
 
@@ -474,10 +456,7 @@ class Terminal {
 
     this.log(`\n=== PROJECT: ${project.name.toUpperCase()} ===\n`, 'info');
 
-    if (typeof document === 'undefined' || !this.output) return;
-
-    const card = document.createElement('div');
-    card.className = 'output-line project-card';
+    if (this._guard()) return;
 
     const badgesHTML = generateBadges(project.badges);
     const techStackHTML = project.techStack.map(t => `<li>\u2022 ${escapeHtml(t.name)} \u2014 ${escapeHtml(t.level)}</li>`).join('');
@@ -492,7 +471,7 @@ class Terminal {
       linksHTML += `<a href="${validateUrl(project.liveUrl)}" target="_blank" rel="noopener noreferrer" class="project-link">Live Dashboard \u279C</a>`;
     }
 
-    card.innerHTML = `
+    const cardHTML = `
       <div class="project-name">\u{1f4e6} ${escapeHtml(project.name)}</div>
       <div class="project-badges">${badgesHTML}</div>
       <div class="project-desc">${escapeHtml(project.description)}</div>
@@ -503,17 +482,14 @@ class Terminal {
       <ul style="list-style: none; padding-left: 0.5rem;">${achievementsHTML}</ul>
     `;
 
-    this.output.appendChild(card);
+    this._card(cardHTML);
 
     if (linksHTML || project.demoNote) {
-      const linksCard = document.createElement('div');
-      linksCard.className = 'output-line project-card';
       let linksContent = linksHTML;
       if (project.demoNote) {
         linksContent += `<br><em style="color: #8a8;">${escapeHtml(project.demoNote)}</em>`;
       }
-      linksCard.innerHTML = linksContent;
-      this.output.appendChild(linksCard);
+      this._card(linksContent);
     }
 
     this.log('', 'default');
@@ -677,7 +653,6 @@ class Terminal {
       this.log('  (type "cancel" to abort)\n', 'warning');
 
       // Override Enter key temporarily for form input
-      const originalHandler = this.input.onkeydown;
       const formSubmit = (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
@@ -725,7 +700,7 @@ class Terminal {
   }
 
   showExperience(level = '') {
-    if (typeof document === 'undefined' || !this.output) return;
+    if (this._guard()) return;
     this.log('\n=== HOMELAB PROJECTS & EXPERIENCE ===\n', 'info');
 
     const experience = [
@@ -776,16 +751,14 @@ class Terminal {
       this.log('Available levels: senior, mid, junior', 'info');
     } else {
       filtered.forEach(exp => {
-        const card = document.createElement('div');
-        card.className = 'output-line project-card';
-        card.innerHTML = `
+        const html = `
           <div class="project-name">\u{1f3e2} ${escapeHtml(exp.role)}</div>
           <div class="project-desc">${escapeHtml(exp.company)} | ${escapeHtml(exp.period)}</div>
           <ul style="list-style: none; padding-left: 1rem;">
             ${exp.details.map(d => `<li style="margin: 0.25rem 0;">   \u2022 ${escapeHtml(d)}</li>`).join('')}
           </ul>
         `;
-        this.output.appendChild(card);
+        this._card(html);
       });
     }
 
@@ -793,7 +766,7 @@ class Terminal {
   }
 
   showEducation() {
-    if (typeof document === 'undefined' || !this.output) return;
+    if (this._guard()) return;
     this.log('\n=== EDUCATION ===\n', 'info');
 
     const education = [
@@ -822,16 +795,14 @@ class Terminal {
     ];
 
     education.forEach(edu => {
-      const card = document.createElement('div');
-      card.className = 'output-line project-card';
-      card.innerHTML = `
+      const html = `
         <div class="project-name">\u{1f393} ${escapeHtml(edu.degree)}</div>
         <div class="project-desc">${escapeHtml(edu.institution)} | ${escapeHtml(edu.year)}</div>
         <ul style="list-style: none; padding-left: 1rem;">
           ${edu.details.map(d => `<li style="margin: 0.25rem 0;">   \u2022 ${escapeHtml(d)}</li>`).join('')}
         </ul>
       `;
-      this.output.appendChild(card);
+      this._card(html);
     });
 
     this.log('\n========================\n', 'info');
@@ -1286,14 +1257,7 @@ Generated from chai-homelab.com portfolio terminal`;
     this.divider();
     this.log('\n=== SKILLS VISUALIZATION ===\n', 'info');
 
-    const skills = {
-      cloud: { label: '[Cloud]', items: ['Azure (Blob Storage, Functions, AKS)', 'Cloudflare (DNS, CDN, Workers)', 'Docker & Kubernetes (k3s, Istio)'], level: 50 },
-      frontend: { label: '[Frontend]', items: ['React.js / Next.js', 'TypeScript / JavaScript (ES6+)', 'CSS3 / Tailwind / Material UI', 'Progressive Web Apps'], level: 40 },
-      backend: { label: '[Backend]', items: ['Node.js / Express / NestJS', 'Python (FastAPI, Django)', 'GraphQL / REST APIs', 'PostgreSQL / MongoDB / Redis'], level: 60 },
-      devops: { label: '[DevOps]', items: ['GitHub Actions / CI/CD Pipelines', 'Terraform / Infrastructure as Code', 'Prometheus / Grafana / Loki', 'OpenTelemetry / Distributed Tracing'], level: 70 }
-    };
-
-    Object.entries(skills).forEach(([key, data]) => {
+    Object.values(SKILLS_DATA).forEach(data => {
       this.log(`${data.label}`, 'success');
       const bar = '\u2588'.repeat(Math.round(data.level / 10)) + '\u2591'.repeat(10 - Math.round(data.level / 10));
       this.log(`  ${bar} ${data.level}%`);
@@ -1662,20 +1626,11 @@ Generated from chai-homelab.com portfolio terminal`;
       fullLoadEst = Math.round(now);
     }
 
-    // A-F grading thresholds
-    const grade = (ms, a, b, c, d) => {
-      if (ms === null || ms <= 0) return { letter: '?', color: 'warning' };
-      if (ms < a) return { letter: 'A', color: 'success' };
-      if (ms < b) return { letter: 'B', color: 'success' };
-      if (ms < c) return { letter: 'C', color: 'info' };
-      if (ms < d) return { letter: 'D', color: 'warning' };
-      return { letter: 'F', color: 'warning' };
-    };
-
+    // A-F grading thresholds (extracted to constants)
     const grades = {
-      ttfb: grade(ttfbEst, 200, 400, 800, 1500),
-      dclt: grade(dcltEst, 500, 1000, 2000, 3000),
-      full: grade(fullLoadEst, 1000, 2000, 4000, 6000)
+      ttfb: gradePerf(ttfbEst, PERF_THRESHOLDS.ttfb),
+      dclt: gradePerf(dcltEst, PERF_THRESHOLDS.domContentLoaded),
+      full: gradePerf(fullLoadEst, PERF_THRESHOLDS.fullLoad)
     };
 
     // ASCII bar chart for each metric
@@ -1700,13 +1655,11 @@ Generated from chai-homelab.com portfolio terminal`;
       this.log(`  ${m.name.padEnd(23)} ${timeStr.padEnd(8)} ${m.letter.padEnd(5)} ${barStr}`, m.color);
     });
 
-    // Overall grade
-    const overallLetters = [grades.ttfb.letter, grades.dclt.letter, grades.full.letter];
-    const overall = overallLetters.includes('F') ? 'F' : overallLetters.includes('D') ? 'D' : overallLetters.includes('C') ? 'C' : overallLetters.includes('B') ? 'B' : 'A';
-    const overallColor = grades.ttfb.color === 'success' && grades.dclt.color === 'success' && grades.full.color === 'success' ? 'success' : 'info';
+    // Overall grade (extracted to utility function)
+    const overall = computeOverallGrade(grades);
 
     this.log('  ───────────────────────────────────────────────', 'info');
-    this.log(`  Overall Grade: ${overall}`, overallColor);
+    this.log(`  Overall Grade: ${overall.grade}`, overall.color);
 
     // Additional perf data from Performance API
     if (performance.getEntriesByType('resource').length > 0) {
@@ -1727,8 +1680,33 @@ Generated from chai-homelab.com portfolio terminal`;
 
   // ---- Core Methods ---
 
+  /** Guard: exit early if not in browser or output element missing */
+  _guard() {
+    return typeof document === 'undefined' || !this.output;
+  }
+
+  /** Create a styled output line with type class */
+  _line(text, type = 'default') {
+    const line = document.createElement('div');
+    line.className = `output-line ${type}`;
+    line.textContent = text;
+    this.output.appendChild(line);
+    this.scrollToBottom();
+  }
+
+  /** Create a project-style card with innerHTML */
+  _card(html, className = 'output-line project-card') {
+    if (this._guard()) return null;
+    const card = document.createElement('div');
+    card.className = className;
+    card.innerHTML = html;
+    this.output.appendChild(card);
+    this.scrollToBottom();
+    return card;
+  }
+
   log(message, type = 'default') {
-    if (typeof document === 'undefined' || !this.output) return;
+    if (this._guard()) return;
     const line = document.createElement('div');
     line.className = `output-line ${type}`;
     line.textContent = message;
