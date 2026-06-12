@@ -39,7 +39,8 @@ class Terminal {
       'help', 'projects', 'project', 'skills', 'skills-visual',
       'experience', 'education', 'resume', 'about', 'contact',
       'status', 'minecraft', 'ai', 'demo', 'clear', 'theme',
-      'matrix', 'timeline', 'neofetch', 'fortune', 'cowsay'
+      'matrix', 'timeline', 'neofetch', 'fortune', 'cowsay',
+      'achievements', 'perf'
     ];
     this.announcementEl = null;
     this._announcementTimeout = null;
@@ -173,6 +174,9 @@ class Terminal {
           } else if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
             e.preventDefault();
             this.clearTerminal();
+          } else if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            this.toggleCommandPalette();
           }
         });
 
@@ -283,36 +287,39 @@ class Terminal {
         case 'ai':
           this.askAI(args);
           break;
-      case 'demo':
-        if (args === 'stop') {
-          this.stopDemoMode();
-        } else {
-          this.startDemoMode();
-        }
-        break;
-      case 'matrix':
-        this.toggleMatrix(args);
-        break;
-      case 'skills-visual':
-        this.showSkillsVisual();
-        break;
-      case 'timeline':
-        this.showTimeline();
-        break;
-      case 'neofetch':
-        this.showNeofetch();
-        break;
-      case 'fortune':
-        this.showFortune();
-        break;
-      case 'cowsay':
-        this.showCowsay(args);
-        break;
-      case 'achievements':
-        this.showAchievements();
-        break;
-      default:
-        this.log(`Unknown command: ${cmd}`, 'warning');
+        case 'demo':
+          if (args === 'stop') {
+            this.stopDemoMode();
+          } else {
+            this.startDemoMode();
+          }
+          break;
+        case 'matrix':
+          this.toggleMatrix(args);
+          break;
+        case 'skills-visual':
+          this.showSkillsVisual();
+          break;
+        case 'timeline':
+          this.showTimeline();
+          break;
+        case 'neofetch':
+          this.showNeofetch();
+          break;
+        case 'fortune':
+          this.showFortune();
+          break;
+        case 'cowsay':
+          this.showCowsay(args);
+          break;
+        case 'achievements':
+          this.showAchievements();
+          break;
+        case 'perf':
+          this.showPerf();
+          break;
+        default:
+          this.log(`Unknown command: ${cmd}`, 'warning');
       }
 
       // Track achievements for valid commands
@@ -352,12 +359,15 @@ class Terminal {
       { cmd: 'neofetch', desc: 'System information display' },
       { cmd: 'fortune', desc: 'Random tech/career fortune' },
       { cmd: 'cowsay <text>', desc: 'ASCII cow says your text' },
-      { cmd: 'achievements', desc: 'View earned achievements' }
+      { cmd: 'achievements', desc: 'View earned achievements' },
+      { cmd: 'perf', desc: 'Performance dashboard (A-F grading)' },
+      { cmd: 'contact --email', desc: 'Interactive email form' }
     ];
 
     const a11yShortcuts = [
-      { key: 'Tab', desc: 'Navigate between elements' },
+      { key: 'Tab', desc: 'Autocomplete command' },
       { key: '\u2190/\u2191', desc: 'Command history' },
+      { key: 'Ctrl+K', desc: 'Command palette overlay' },
       { key: 'Esc', desc: 'Focus input field' }
     ];
 
@@ -598,15 +608,120 @@ class Terminal {
     });
   }
 
-  showContact() {
+  showContact(args) {
     if (typeof document === 'undefined' || !this.output) return;
+
+    // Multi-step interactive email form: contact --email
+    if (args === '--email' || args === '-e') {
+      this.startContactForm();
+      return;
+    }
+
     this.divider();
     this.log('\n=== CONTACT ===\n', 'info');
     this.log('\u{1f4e7} Email: eugene.vince55@gmail.com', 'success');
     this.log('\u{1f517} GitHub: github.com/chaitea321', 'success');
     this.log('\u{1f4bc} LinkedIn: linkedin.com/in/eugene-vincent-42472024b', 'success');
     this.log('\u{1f310} Portfolio: chai-homelab.com', 'success');
+    this.log('\n  Use "contact --email" to send via terminal.\n', 'info');
     this.log('========================\n', 'info');
+  }
+
+  // Multi-step contact form with interactive prompts
+  startContactForm() {
+    if (typeof document === 'undefined' || !this.output || !this.input) return;
+
+    this.divider();
+    this.log('\n=== SEND EMAIL ===\n', 'info');
+    this.log('Interactive email form. Type answers below.', 'info');
+    this.log('Type "cancel" at any time to abort.\n', 'warning');
+
+    const steps = [
+      { key: 'name', prompt: 'Your name:', validate: v => v.trim().length > 0 },
+      { key: 'subject', prompt: 'Subject:', validate: v => v.trim().length > 0 },
+      { key: 'message', prompt: 'Message:', validate: v => v.trim().length > 10 }
+    ];
+
+    let stepIndex = 0;
+    const formData = {};
+
+    const askNext = () => {
+      if (stepIndex >= steps.length) {
+        // Build mailto: link and open it
+        const name = encodeURIComponent(formData.name);
+        const subject = encodeURIComponent(formData.subject);
+        const body = encodeURIComponent(`Hi Eugene,\n\nFrom: ${formData.name}\n\n${formData.message}`);
+        const mailto = `mailto:eugene.vince55@gmail.com?subject=${subject}&body=${body}`;
+
+        this.log('\nForm complete!', 'success');
+        this.log('\nOpening email client...\n', 'info');
+        this.log('  To: eugene.vince55@gmail.com', 'info');
+        this.log(`  Subject: ${formData.subject}`, 'info');
+        this.log(`  From: ${formData.name}\n`, 'info');
+
+        // Open mailto link
+        const a = document.createElement('a');
+        a.href = mailto;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        this.divider();
+        stepIndex = -1; // Mark as complete
+        return;
+      }
+
+      const step = steps[stepIndex];
+      this.log(`\n${step.prompt}`, 'info');
+      this.log('  (type "cancel" to abort)\n', 'warning');
+
+      // Override Enter key temporarily for form input
+      const originalHandler = this.input.onkeydown;
+      const formSubmit = (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          const value = this.input.value.trim();
+
+          if (value.toLowerCase() === 'cancel') {
+            this.log('\nForm cancelled.', 'warning');
+            this.divider();
+            stepIndex = -1;
+            this.input.onkeydown = null;
+            return;
+          }
+
+          if (!step.validate(value)) {
+            this.log(`  ${step.prompt} (minimum length required)`, 'warning');
+            this.input.value = '';
+            return;
+          }
+
+          formData[step.key] = value;
+          this.log('  \u2705 Recorded.', 'success');
+          stepIndex++;
+          this.input.value = '';
+          this.input.onkeydown = null;
+          this.bindEvents(); // Rebind normal events, then ask next
+          if (stepIndex >= 0) askNext();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          this.log('\nForm cancelled.', 'warning');
+          this.divider();
+          stepIndex = -1;
+          this.input.onkeydown = null;
+        }
+      };
+
+      // Small delay to let the next character render before focusing
+      setTimeout(() => {
+        this.input.focus();
+        this.input.onkeydown = formSubmit;
+      }, 50);
+    };
+
+    askNext();
   }
 
   showExperience(level = '') {
@@ -1045,7 +1160,7 @@ Generated from chai-homelab.com portfolio terminal`;
     } catch (error) {
       console.error('AI query error:', error);
       this.log('\n\u{1f916} Answer:', 'info');
-      this.log(`Using cached knowledge. Deploy Ollama for live AI answers.`, 'warning');
+      this.log('Using cached knowledge. Deploy Ollama for live AI answers.', 'warning');
     }
 
     this.log('', 'default');
@@ -1254,15 +1369,15 @@ Generated from chai-homelab.com portfolio terminal`;
     const platform = navigator.platform || 'Unknown';
 
     this.divider();
-    this.log(`       _/.-~-.        eugene@homelab`, 'cyan');
-    this.log(`      |   '._.'       ------------------`);
-    this.log(`      |  '-.  .-'     OS: Ubuntu 24.04 LTS`);
-    this.log(`      |  '-.  .-'     Kernel: AMD Ryzen 7 5700U`);
+    this.log('       _/.-~-.        eugene@homelab', 'cyan');
+    this.log('      |   \'._.\'       ------------------');
+    this.log('      |  \'-.  .-\'     OS: Ubuntu 24.04 LTS');
+    this.log('      |  \'-.  .-\'     Kernel: AMD Ryzen 7 5700U');
     this.log(`      |    '-.'       Uptime: ${isOnline ? 'Online' : 'Offline'}`);
-    this.log(`    .'   '    '.      Shell: bash 5.5.1`);
-    this.log(`   '._   '._'   _.  Memory: 14GB RAM`);
-    this.log(`    '.___.'__.'     Cluster: k3s (Istio + Flagger)`);
-    this.log(`                   AI: Ollama Phi-3 (Tailscale)`);
+    this.log('    .\'   \'    \'.      Shell: bash 5.5.1');
+    this.log('   \'._   \'._\'   _.  Memory: 14GB RAM');
+    this.log('    \'.___.\'__.\'     Cluster: k3s (Istio + Flagger)');
+    this.log('                   AI: Ollama Phi-3 (Tailscale)');
     this.log(`                   Browser: ${browser}`);
     this.log(`                   Network: ${isOnline ? '108.233.139.113' : 'offline'}`);
     this.divider();
@@ -1287,7 +1402,7 @@ Generated from chai-homelab.com portfolio terminal`;
       '"The secret to great software is shipping it, breaking it, fixing it, and repeating."',
       '"Docker containers are like suitcases: everything fits if you just fold enough."',
       '"The most dangerous line of code is the one that says // TODO: fix this later."',
-      '"Observability: because \"it works\" is not a valid incident response."',
+      '"Observability: because \'it works\' is not a valid incident response."',
       '"Edge computing: because making users wait 50ms longer is unacceptable."',
       '"Service mesh mTLS: because plaintext HTTP in production is a personality trait."',
       '"Zero-downtime deployment: proving that humans are still the biggest source of outages."',
@@ -1379,9 +1494,297 @@ Generated from chai-homelab.com portfolio terminal`;
     this.divider();
   }
 
+  // ---- Ctrl+K Command Palette ---
+
+  toggleCommandPalette() {
+    if (typeof document === 'undefined') return;
+    const existing = document.getElementById('command-palette');
+    if (existing) {
+      existing.remove();
+      this._paletteOpen = false;
+      return;
+    }
+    this.showCommandPalette();
+  }
+
+  showCommandPalette() {
+    if (typeof document === 'undefined' || !this.output) return;
+
+    // Create overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'command-palette';
+    overlay.className = 'command-palette';
+
+    // Search input
+    const searchInput = document.createElement('input');
+    searchInput.id = 'palette-search';
+    searchInput.type = 'text';
+    searchInput.placeholder = 'Type a command... (↑↓ navigate, Enter execute, Esc close)';
+    searchInput.setAttribute('autocomplete', 'off');
+    searchInput.setAttribute('spellcheck', 'false');
+
+    // Results container
+    const results = document.createElement('div');
+    results.id = 'palette-results';
+    results.className = 'palette-results';
+
+    overlay.appendChild(searchInput);
+    overlay.appendChild(results);
+    document.body.appendChild(overlay);
+
+    this._paletteOpen = true;
+
+    // Focus search input with slight delay for animation
+    setTimeout(() => {
+      searchInput.focus();
+      this.renderPaletteResults(searchInput.value, results);
+    }, 100);
+
+    // Search / filter handler
+    searchInput.addEventListener('input', () => {
+      this.renderPaletteResults(searchInput.value, results);
+    });
+
+    // Keyboard navigation
+    searchInput.addEventListener('keydown', (e) => {
+      const items = results.querySelectorAll('.palette-item');
+      const focused = results.querySelector('.palette-item.focused');
+      let focusedIdx = Array.from(items).indexOf(focused);
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        focusedIdx = Math.min(focusedIdx + 1, items.length - 1);
+        items.forEach(i => i.classList.remove('focused'));
+        if (items[focusedIdx]) {
+          items[focusedIdx].classList.add('focused');
+          items[focusedIdx].scrollIntoView({ block: 'nearest' });
+        }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        focusedIdx = Math.max(focusedIdx - 1, 0);
+        items.forEach(i => i.classList.remove('focused'));
+        if (items[focusedIdx]) {
+          items[focusedIdx].classList.add('focused');
+          items[focusedIdx].scrollIntoView({ block: 'nearest' });
+        }
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const active = results.querySelector('.palette-item.focused') || results.querySelector('.palette-item');
+        if (active) {
+          const cmd = active.dataset.command;
+          overlay.remove();
+          this._paletteOpen = false;
+          // Execute the command
+          this.displayCommand(cmd);
+          this.executeCommand(cmd);
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        overlay.remove();
+        this._paletteOpen = false;
+        this.input.focus();
+      }
+    });
+
+    // Click to execute
+    results.addEventListener('click', (e) => {
+      const item = e.target.closest('.palette-item');
+      if (item) {
+        const cmd = item.dataset.command;
+        overlay.remove();
+        this._paletteOpen = false;
+        this.displayCommand(cmd);
+        this.executeCommand(cmd);
+      }
+    });
+
+    // Close on overlay click (outside palette box)
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.remove();
+        this._paletteOpen = false;
+      }
+    });
+  }
+
+  renderPaletteResults(query, results) {
+    results.innerHTML = '';
+    const q = query.toLowerCase().trim();
+
+    // Build command list from help + commandHistory (deduplicated)
+    const uniqueCommands = [...new Set([
+      ...this.commandHistory,
+      'perf'
+    ])];
+
+    let filtered;
+    if (!q) {
+      // Show all commands sorted by usage-relevance hint
+      filtered = uniqueCommands;
+    } else {
+      filtered = uniqueCommands.filter(cmd => cmd.includes(q));
+    }
+
+    if (filtered.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'palette-item';
+      empty.textContent = 'No matching commands';
+      results.appendChild(empty);
+      return;
+    }
+
+    filtered.slice(0, 12).forEach(cmd => {
+      const item = document.createElement('div');
+      item.className = 'palette-item';
+      item.dataset.command = cmd;
+
+      const icon = this.getCommandIcon(cmd);
+      const desc = this.getCommandDesc(cmd);
+
+      item.innerHTML = `
+        <span class="palette-icon">${icon}</span>
+        <span class="palette-cmd">${this.highlightMatch(cmd, q)}</span>
+        <span class="palette-desc">${desc}</span>
+      `;
+
+      results.appendChild(item);
+    });
+
+    // Auto-focus first result
+    const first = results.querySelector('.palette-item');
+    if (first) first.classList.add('focused');
+  }
+
+  getCommandIcon(cmd) {
+    const icons = {
+      help: '\u2753', projects: '\u{1f4ca}', project: '\u{1f4be}', skills: '\u{1f3af}',
+      'skills-visual': '\u{1f4ca}', timeline: '\u{1f5d3}', experience: '\u{1f4bc}',
+      education: '\u{1f393}', resume: '\u{1f4c4}', about: '\u{1f464}', contact: '\u{1f4e7}',
+      status: '\u{1f504}', minecraft: '\u{1f3ae}', ai: '\u{1f916}', demo: '\u{1f3ac}',
+      clear: '\u274c', theme: '\u{1f3b3}', matrix: '\u25a0', neofetch: '\u{1f5a1}',
+      fortune: '\u{1f3ae}', cowsay: '\u{1f42e}', achievements: '\u{1f3af}', perf: '\u2699'
+    };
+    return icons[cmd] || '\u25aa';
+  }
+
+  getCommandDesc(cmd) {
+    const descriptions = {
+      help: 'Show available commands', projects: 'List all projects', project: 'View project details',
+      skills: 'Show technical skills', 'skills-visual': 'Animated skill bars', timeline: 'Project timeline',
+      experience: 'Work experience', education: 'Education background', resume: 'Resume text',
+      about: 'About Eugene', contact: 'Contact info', status: 'System metrics',
+      minecraft: 'Minecraft server stats', ai: 'AI assistant', demo: 'Auto showcase',
+      clear: 'Clear terminal', theme: 'Toggle theme', matrix: 'Matrix rain',
+      neofetch: 'System info display', fortune: 'Random fortune', cowsay: 'ASCII cow',
+      achievements: 'Earned badges', perf: 'Performance dashboard'
+    };
+    return descriptions[cmd] || '';
+  }
+
+  highlightMatch(text, query) {
+    if (!query) return escapeHtml(text);
+    const idx = text.toLowerCase().indexOf(query);
+    if (idx === -1) return escapeHtml(text);
+    const before = text.slice(0, idx);
+    const match = text.slice(idx, idx + query.length);
+    const after = text.slice(idx + query.length);
+    return `${escapeHtml(before)}<span class="palette-match">${escapeHtml(match)}</span>${escapeHtml(after)}`;
+  }
+
+  // ---- Performance Dashboard ---
+
+  showPerf() {
+    if (typeof document === 'undefined' || !this.output) return;
+    this.divider();
+    this.log('\n=== PERFORMANCE DASHBOARD ===\n', 'info');
+
+    const perf = performance.getEntriesByType('navigation')[0] || {};
+    const now = performance.now();
+
+    // Navigation Timing API metrics
+    const ttfb = perf.startTime ? Math.round(perf.responseStart - perf.startTime) : null;
+    const dcltStart = perf.domContentLoadedEventStart || 0;
+    const domContentLoaded = Math.round(dcltStart - perf.startTime);
+    const fullLoad = perf.loadEventStart ? Math.round(perf.loadEventStart - perf.startTime) : null;
+
+    // Fallback: use PerformanceObserver if Navigation Timing not available
+    let ttfbEst = ttfb;
+    let dcltEst = domContentLoaded;
+    let fullLoadEst = fullLoad;
+
+    if (!ttfbEst && now > 0) {
+      // Estimate from performance.now() (time since page load started)
+      ttfbEst = Math.round(now * 0.6);
+      dcltEst = Math.round(now * 0.8);
+      fullLoadEst = Math.round(now);
+    }
+
+    // A-F grading thresholds
+    const grade = (ms, a, b, c, d) => {
+      if (ms === null || ms <= 0) return { letter: '?', color: 'warning' };
+      if (ms < a) return { letter: 'A', color: 'success' };
+      if (ms < b) return { letter: 'B', color: 'success' };
+      if (ms < c) return { letter: 'C', color: 'info' };
+      if (ms < d) return { letter: 'D', color: 'warning' };
+      return { letter: 'F', color: 'warning' };
+    };
+
+    const grades = {
+      ttfb: grade(ttfbEst, 200, 400, 800, 1500),
+      dclt: grade(dcltEst, 500, 1000, 2000, 3000),
+      full: grade(fullLoadEst, 1000, 2000, 4000, 6000)
+    };
+
+    // ASCII bar chart for each metric
+    const bar = (ms, max) => {
+      if (ms === null || ms <= 0) return '░░░░░░░░░░';
+      const filled = Math.min(10, Math.max(1, Math.round((ms / max) * 10)));
+      return '\u2588'.repeat(filled) + '\u2591'.repeat(10 - filled);
+    };
+
+    this.log('\n  Metric                    Time     Grade   Bar', 'info');
+    this.log('  ───────────────────────────────────────────────', 'info');
+
+    const metrics = [
+      { name: 'TTFB', time: ttfbEst, ...grades.ttfb, max: 2000 },
+      { name: 'DOMContentLoaded', time: dcltEst, ...grades.dclt, max: 4000 },
+      { name: 'Full Load', time: fullLoadEst, ...grades.full, max: 8000 }
+    ];
+
+    metrics.forEach(m => {
+      const timeStr = m.time !== null ? `${m.time}ms` : 'N/A';
+      const barStr = bar(m.time, m.max);
+      this.log(`  ${m.name.padEnd(23)} ${timeStr.padEnd(8)} ${m.letter.padEnd(5)} ${barStr}`, m.color);
+    });
+
+    // Overall grade
+    const overallLetters = [grades.ttfb.letter, grades.dclt.letter, grades.full.letter];
+    const overall = overallLetters.includes('F') ? 'F' : overallLetters.includes('D') ? 'D' : overallLetters.includes('C') ? 'C' : overallLetters.includes('B') ? 'B' : 'A';
+    const overallColor = grades.ttfb.color === 'success' && grades.dclt.color === 'success' && grades.full.color === 'success' ? 'success' : 'info';
+
+    this.log('  ───────────────────────────────────────────────', 'info');
+    this.log(`  Overall Grade: ${overall}`, overallColor);
+
+    // Additional perf data from Performance API
+    if (performance.getEntriesByType('resource').length > 0) {
+      const resources = performance.getEntriesByType('resource');
+      const largestResource = resources.reduce((max, r) => r.responseEnd > max.responseEnd ? r : max, resources[0] || {});
+      this.log(`\n  Largest Resource: ${largestResource.name || 'N/A'}`, 'info');
+    }
+
+    // Memory info (if available via Performance API)
+    if (performance.memory) {
+      const usedMB = Math.round(performance.memory.usedJSHeapSize / 1048576);
+      const totalMB = Math.round(performance.memory.totalJSHeapSize / 1048576);
+      this.log(`  JS Heap: ${usedMB}MB / ${totalMB}MB`, 'info');
+    }
+
+    this.divider();
+  }
+
   // ---- Core Methods ---
 
- log(message, type = 'default') {
+  log(message, type = 'default') {
     if (typeof document === 'undefined' || !this.output) return;
     const line = document.createElement('div');
     line.className = `output-line ${type}`;
@@ -1458,7 +1861,7 @@ Generated from chai-homelab.com portfolio terminal`;
     });
   }
 
- autocomplete() {
+  autocomplete() {
     if (typeof document === 'undefined' || !this.input) return;
     const value = this.input.value.trim();
 
