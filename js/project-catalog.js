@@ -163,14 +163,6 @@ const PROJECT_CATALOG = {
   }
 };
 
-// Category definitions for filtering
-const CATEGORY_DEFINITIONS = {
-  cloud: { label: '☁️ Cloud', description: 'Azure, Serverless, Container Services' },
-  devops: { label: '🏷 DevOps', description: 'Kubernetes, CI/CD, Observability, Service Mesh' },
-  iot: { label: '🎮 IoT / Gaming', description: 'Minecraft, RCON, Discord Bot, Hardware Monitoring' },
-  web: { label: '💾 Web Apps', description: 'Full-stack, React, Node.js, Real-time Systems' }
-};
-
 // Default projects to display (ordered by importance)
 const DEFAULT_PROJECT_ORDER = [
   'meshwatch',
@@ -226,5 +218,5 @@ function generateBadges(badges) {
   return badges.map(b => `<span class="project-badge">${escapeHtml(b)}</span>`).join(' ');
 }
 
-export { PROJECT_CATALOG, CATEGORY_DEFINITIONS, DEFAULT_PROJECT_ORDER, getProjects, getProject, generateBadges };
+export { PROJECT_CATALOG, DEFAULT_PROJECT_ORDER, getProjects, getProject, generateBadges };
 export default PROJECT_CATALOG;

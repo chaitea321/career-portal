@@ -800,7 +800,7 @@ body.theme-retro .terminal-footer {
   box-shadow: 0 0 50px rgba(188, 19, 254, 0.2), 0 0 100px rgba(0, 255, 255, 0.08);
 }
 
-/* Retro theme adjustments */
+/* Retro theme: consolidate palette overrides using inherited variables */
 body.theme-retro .command-palette {
   background: rgba(10, 8, 4, 0.92);
   border-color: rgba(255, 140, 0, 0.3);

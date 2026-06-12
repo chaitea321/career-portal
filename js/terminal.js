@@ -5,7 +5,7 @@ import { getProjects, getProject, generateBadges } from './project-catalog.js';
 import MeshWatchAPI from './meshwatch-api.js';
 import AIAssistant from './ai-assistant.js';
 import Achievements from './achievements.js';
-import { escapeHtml, normalizeSlug } from './utils/helpers.js';
+import { escapeHtml, normalizeSlug, COMMAND_ICONS, COMMAND_DESCS, highlightMatch, createPaletteItem, filterCommands } from './utils/helpers.js';
 
 // Lazy import VisualEffects for matrix Easter egg
 let _visualEffects = null;
@@ -1611,25 +1611,13 @@ Generated from chai-homelab.com portfolio terminal`;
     results.innerHTML = '';
     const q = query.toLowerCase().trim();
 
-    // Build command list from help + commandHistory (deduplicated)
-    const uniqueCommands = [...new Set([
-      ...this.commandHistory,
-      'perf'
-    ])];
+    // Build command list (deduplicated, perf always included)
+    const allCommands = [...new Set([...this.commandHistory, 'perf'])];
 
-    let filtered;
-    if (!q) {
-      // Show all commands sorted by usage-relevance hint
-      filtered = uniqueCommands;
-    } else {
-      filtered = uniqueCommands.filter(cmd => cmd.includes(q));
-    }
+    const filtered = filterCommands(allCommands, q);
 
     if (filtered.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'palette-item';
-      empty.textContent = 'No matching commands';
-      results.appendChild(empty);
+      results.textContent = 'No matching commands';
       return;
     }
 
@@ -1637,58 +1625,13 @@ Generated from chai-homelab.com portfolio terminal`;
       const item = document.createElement('div');
       item.className = 'palette-item';
       item.dataset.command = cmd;
-
-      const icon = this.getCommandIcon(cmd);
-      const desc = this.getCommandDesc(cmd);
-
-      item.innerHTML = `
-        <span class="palette-icon">${icon}</span>
-        <span class="palette-cmd">${this.highlightMatch(cmd, q)}</span>
-        <span class="palette-desc">${desc}</span>
-      `;
-
+      item.innerHTML = createPaletteItem(cmd, q).innerHTML;
       results.appendChild(item);
     });
 
     // Auto-focus first result
     const first = results.querySelector('.palette-item');
     if (first) first.classList.add('focused');
-  }
-
-  getCommandIcon(cmd) {
-    const icons = {
-      help: '\u2753', projects: '\u{1f4ca}', project: '\u{1f4be}', skills: '\u{1f3af}',
-      'skills-visual': '\u{1f4ca}', timeline: '\u{1f5d3}', experience: '\u{1f4bc}',
-      education: '\u{1f393}', resume: '\u{1f4c4}', about: '\u{1f464}', contact: '\u{1f4e7}',
-      status: '\u{1f504}', minecraft: '\u{1f3ae}', ai: '\u{1f916}', demo: '\u{1f3ac}',
-      clear: '\u274c', theme: '\u{1f3b3}', matrix: '\u25a0', neofetch: '\u{1f5a1}',
-      fortune: '\u{1f3ae}', cowsay: '\u{1f42e}', achievements: '\u{1f3af}', perf: '\u2699'
-    };
-    return icons[cmd] || '\u25aa';
-  }
-
-  getCommandDesc(cmd) {
-    const descriptions = {
-      help: 'Show available commands', projects: 'List all projects', project: 'View project details',
-      skills: 'Show technical skills', 'skills-visual': 'Animated skill bars', timeline: 'Project timeline',
-      experience: 'Work experience', education: 'Education background', resume: 'Resume text',
-      about: 'About Eugene', contact: 'Contact info', status: 'System metrics',
-      minecraft: 'Minecraft server stats', ai: 'AI assistant', demo: 'Auto showcase',
-      clear: 'Clear terminal', theme: 'Toggle theme', matrix: 'Matrix rain',
-      neofetch: 'System info display', fortune: 'Random fortune', cowsay: 'ASCII cow',
-      achievements: 'Earned badges', perf: 'Performance dashboard'
-    };
-    return descriptions[cmd] || '';
-  }
-
-  highlightMatch(text, query) {
-    if (!query) return escapeHtml(text);
-    const idx = text.toLowerCase().indexOf(query);
-    if (idx === -1) return escapeHtml(text);
-    const before = text.slice(0, idx);
-    const match = text.slice(idx, idx + query.length);
-    const after = text.slice(idx + query.length);
-    return `${escapeHtml(before)}<span class="palette-match">${escapeHtml(match)}</span>${escapeHtml(after)}`;
   }
 
   // ---- Performance Dashboard ---

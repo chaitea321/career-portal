@@ -1,6 +1,7 @@
 import { describe, it, before } from 'node:test';
 import assert from 'assert/strict';
 import Terminal from '../js/terminal.js';
+import { COMMAND_ICONS, COMMAND_DESCS, highlightMatch } from '../js/utils/helpers.js';
 
 describe('New Features Tests', () => {
   let terminal;
@@ -50,26 +51,26 @@ describe('New Features Tests', () => {
       assert.strictEqual(typeof terminal.renderPaletteResults, 'function', 'renderPaletteResults should be a method');
     });
 
-    it('getCommandIcon returns icon for known commands', () => {
-      assert.ok(terminal.getCommandIcon('help'), 'should return icon for help');
-      assert.ok(terminal.getCommandIcon('projects'), 'should return icon for projects');
-      assert.ok(terminal.getCommandIcon('perf'), 'should return icon for perf');
+    it('COMMAND_ICONS has icons for known commands', () => {
+      assert.ok(COMMAND_ICONS['help'], 'should have icon for help');
+      assert.ok(COMMAND_ICONS['projects'], 'should have icon for projects');
+      assert.ok(COMMAND_ICONS['perf'], 'should have icon for perf');
     });
 
-    it('getCommandDesc returns description for known commands', () => {
-      assert.strictEqual(typeof terminal.getCommandDesc('help'), 'string');
-      assert.ok(terminal.getCommandDesc('projects').length > 0, 'projects should have description');
-      assert.ok(terminal.getCommandDesc('perf').length > 0, 'perf should have description');
+    it('COMMAND_DESCS has descriptions for known commands', () => {
+      assert.strictEqual(typeof COMMAND_DESCS['help'], 'string');
+      assert.ok(COMMAND_DESCS['projects'].length > 0, 'projects should have description');
+      assert.ok(COMMAND_DESCS['perf'].length > 0, 'perf should have description');
     });
 
     it('highlightMatch highlights query in command text', () => {
-      const result = terminal.highlightMatch('skills-visual', 'skill');
+      const result = highlightMatch('skills-visual', 'skill');
       assert.ok(result.includes('<span class="palette-match">'), 'should wrap match in span');
       assert.ok(result.includes('skill'), 'should contain matched text');
     });
 
     it('highlightMatch returns escaped text when no match', () => {
-      const result = terminal.highlightMatch('<script>', 'xxx');
+      const result = highlightMatch('<script>', 'xxx');
       assert.strictEqual(result, '&lt;script&gt;', 'should escape HTML with no match');
     });
 
