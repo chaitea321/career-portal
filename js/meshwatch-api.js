@@ -107,7 +107,7 @@ class MeshWatchAPI {
       return {
         success: false,
         error: 'Not authenticated',
-        data: 'Minecraft PaperMC 1.21.4',
+        data: 'Minecraft PaperMC 26.1.2',
         tps: 20,
         players: 3,
         uptime: '99.8%',
@@ -136,7 +136,7 @@ class MeshWatchAPI {
       return {
         success: false,
         error: error.message,
-        data: 'Minecraft PaperMC 1.21.4',
+        data: 'Minecraft PaperMC 26.1.2',
         tps: 20,
         players: 3,
         uptime: '99.8%',

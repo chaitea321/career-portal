@@ -44,7 +44,7 @@ const PROJECT_CATALOG = {
     category: 'iot',
     tags: ['minecraft', 'service-mesh', 'discord-bot', 'monitoring'],
     techStack: [
-      { name: 'PaperMC 1.21.4', level: 'Java 21 Game Server' },
+      { name: 'PaperMC 26.1.2', level: 'Java 25 Game Server' },
       { name: 'JMX Exporter', level: 'TPS, Heap, GC Metrics' },
       { name: 'RCON Protocol', level: 'Server Control' },
       { name: 'Discord.py Bot', level: '10 Slash Commands' },

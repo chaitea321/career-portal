@@ -31,11 +31,11 @@ NEW_RCON=$((10 + RANDOM % 15))
 
 cat > minecraft-stats.json << EOF
 {
-  "server": {"name": "Eugene's Homelab MC", "version": "PaperMC 1.21.4", "javaVersion": "Java 21", "lastRestart": "2026-06-10T18:30:00Z"},
+  "server": {"name": "Eugene's Homelab MC", "version": "PaperMC 26.1.2", "javaVersion": "Java 25", "lastRestart": "2026-06-10T18:30:00Z"},
   "metrics": {"tps": $NEW_TPS, "players": $NEW_PLAYERS, "maxPlayers": 20, "uptime": "99.7%", "lastGcPause": "${NEW_GC}ms", "heapUsedMB": $NEW_HEAP, "heapMaxMB": 512},
   "monitoring": {"discordAlertsToday": $NEW_DISCORD, "rconLatency": "${NEW_RCON}ms", "prometheusScrapes": $NEW_PROMETHEUS, "grafanaPanels": 5},
   "recentChanges": [
-    "Upgraded to PaperMC 1.21.4 with Java 21 runtime",
+    "Upgraded to PaperMC 26.1.2 with Java 25 runtime",
     "Added new Grafana panel for GC pause monitoring",
     "Increased heap allocation from 256MB to 512MB",
     "Implemented RCON latency tracking dashboard"

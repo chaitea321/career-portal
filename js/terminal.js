@@ -865,7 +865,7 @@ Generated from chai-homelab.com portfolio terminal
 
   showMinecraftFallback() {
     if (typeof document === 'undefined' || !this.output) return;
-    this.log('Server: Minecraft PaperMC 1.21.4 (Java 21)', 'success');
+    this.log('Server: Minecraft PaperMC 26.1.2 (Java 25)', 'success');
     this.log('TPS: 20 | Players: 3', 'info');
     this.log('Uptime: 99.8% | Last GC Pause: 45ms', 'info');
     this.log('Discord Alerts Today: 0', 'info');
@@ -892,14 +892,14 @@ Generated from chai-homelab.com portfolio terminal
     }
 
     this.log('', 'default');
-    this.log(`\u{1f916} AI thinking: ${question}`, 'info');
+    this.log(`\u{1f916} Portfolio Knowledge: ${question}`, 'info');
 
     try {
       // Try to query Ollama via Azure Functions proxy
       const response = await this.aiAssistant.query(question);
 
       if (response.success) {
-        this.log('\n\u{1f916} AI Response:', 'success');
+        this.log('\n\u{1f916} Answer:', 'success');
         // Wrap long responses nicely
         const words = response.data.split(' ');
         let line = '';
@@ -915,7 +915,7 @@ Generated from chai-homelab.com portfolio terminal
         if (line) this.log(line, 'info');
       } else {
         // Fallback: use cached knowledge (already returned in response.data)
-        this.log('\n\u{1f916} AI Response (cached knowledge):', 'success');
+        this.log('\n\u{1f916} Answer:', 'success');
         const answer = response.data;
         if (answer) {
           const words = answer.split(' ');
@@ -931,14 +931,13 @@ Generated from chai-homelab.com portfolio terminal
           });
           if (line) this.log(line, 'info');
         } else {
-          this.log('AI backend unavailable. Deploy Ollama via Tailscale or Azure Functions for live answers.', 'warning');
+          this.log('For live AI, deploy Ollama on your k3s cluster.', 'warning');
         }
       }
     } catch (error) {
       console.error('AI query error:', error);
-      this.log('\n\u{1f916} AI Response (cached):', 'info');
-      this.log(`Could not connect to AI backend: ${error.message || 'network error'}`, 'warning');
-      this.log('Cached knowledge fallback may be limited. Deploy Ollama for full access.', 'info');
+      this.log('\n\u{1f916} Answer:', 'info');
+      this.log(`Using cached knowledge. Deploy Ollama for live AI answers.`, 'warning');
     }
 
     this.log('', 'default');
