@@ -6,6 +6,9 @@
   <title>Eugene Vincent | Terminal Portfolio</title>
   <meta name="description" content="FAANG-quality terminal-themed portfolio showcasing MeshWatch, Minecraft monitoring, and cloud-native architectures.">
   <meta name="keywords" content="portfolio, devops, azure, kubernetes, meshwatch, minecraft, sre, fullstack">
+  <meta property="og:title" content="Eugene Vincent | Terminal Portfolio">
+  <meta property="og:description" content="FAANG-quality terminal-themed portfolio showcasing MeshWatch, Minecraft monitoring, and cloud-native architectures.">
+  <meta property="og:image" content="/icons/icon-96.png">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/png" sizes="96x96" href="/icons/icon-96.png">
@@ -63,15 +66,78 @@
   <script src="js/pwa.js"></script>
   <script type="module" src="js/visual-effects.js"></script>
   <script>
-    // Mobile hamburger menu toggle
+    // Mobile hamburger menu toggle with keyboard accessibility
     const menuBtn = document.getElementById('mobile-menu-btn');
     const mobileNav = document.getElementById('mobile-nav');
 
     if (menuBtn && mobileNav) {
+      const focusableSelectors = 'a[href], button:not([disabled]), input, select, textarea';
+      
+      function getFocusableElements() {
+        return Array.from(mobileNav.querySelectorAll(focusableSelectors)).filter(el => 
+          el.offsetParent !== null && !el.hasAttribute('aria-hidden')
+        );
+      }
+
+      function closeMenu() {
+        mobileNav.classList.remove('open');
+        menuBtn.setAttribute('aria-expanded', 'false');
+        menuBtn.classList.remove('active');
+      }
+
+      function openMenu() {
+        mobileNav.classList.add('open');
+        menuBtn.setAttribute('aria-expanded', 'true');
+        menuBtn.classList.add('active');
+        const firstFocusable = getFocusableElements()[0];
+        if (firstFocusable) {
+          setTimeout(() => firstFocusable.focus(), 50);
+        }
+      }
+
+      function trapFocus(e) {
+        if (!mobileNav.classList.contains('open')) return;
+        const focusable = getFocusableElements();
+        if (focusable.length === 0) return;
+
+        if (e.key === 'Tab') {
+          if (e.shiftKey) {
+            if (document.activeElement === focusable[0]) {
+              e.preventDefault();
+              focusable[focusable.length - 1].focus();
+            }
+          } else {
+            if (document.activeElement === focusable[focusable.length - 1]) {
+              e.preventDefault();
+              focusable[0].focus();
+            }
+          }
+        }
+
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          closeMenu();
+          menuBtn.focus();
+        }
+      }
+
+      document.addEventListener('keydown', trapFocus);
+
+      mobileNav.querySelectorAll(focusableSelectors).forEach(link => {
+        link.addEventListener('click', () => {
+          document.removeEventListener('keydown', trapFocus);
+          closeMenu();
+        });
+      });
+
       menuBtn.addEventListener('click', () => {
-        const isOpen = mobileNav.classList.toggle('open');
-        menuBtn.setAttribute('aria-expanded', isOpen);
-        menuBtn.classList.toggle('active', isOpen);
+        const isOpen = mobileNav.classList.contains('open');
+        if (isOpen) {
+          document.removeEventListener('keydown', trapFocus);
+          closeMenu();
+        } else {
+          openMenu();
+        }
       });
     }
   </script>
