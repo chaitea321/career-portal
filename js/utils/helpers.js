@@ -7,13 +7,13 @@ export function escapeHtml(str) {
   let escaped = str.replace(/\0/g, '');
 
   // Order matters: & must be first to avoid double-escaping
+  // Note: / escaping removed — unnecessary with textContent, corrupts URL display
   return escaped
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
-    .replace(/\//g, '&#x2F;'); // Prevent </script> injection
+    .replace(/'/g, '&#x27;');
 }
 
 /** Normalize a search slug: lowercase, convert spaces to hyphens, collapse multiple hyphens */
@@ -42,7 +42,7 @@ export const COMMAND_ICONS = Object.freeze({
   status: '\u{1f504}', minecraft: '\u{1f3ae}', ai: '\u{1f916}', demo: '\u{1f3ac}',
   clear: '\u274c', theme: '\u{1f3b3}', matrix: '\u25a0', neofetch: '\u{1f5a1}',
   fortune: '\u{1f3ae}', cowsay: '\u{1f42e}', achievements: '\u{1f3af}', perf: '\u2699',
-  explorer: '\u{1f4b1}', dashboard: '\u{1f4ca}'
+  explorer: '\u{1f4b1}', dashboard: '\u{1f4ca}', writeups: '\u{1f4dd}'
 });
 
 export const COMMAND_DESCS = Object.freeze({
@@ -54,8 +54,11 @@ export const COMMAND_DESCS = Object.freeze({
   clear: 'Clear terminal', theme: 'Toggle theme', matrix: 'Matrix rain',
   neofetch: 'System info display', fortune: 'Random fortune', cowsay: 'ASCII cow',
   achievements: 'Earned badges', perf: 'Performance dashboard',
-  explorer: 'Open Project Explorer page', dashboard: 'Open Live Dashboard page'
+  explorer: 'Open Project Explorer page', dashboard: 'Open Live Dashboard page', writeups: 'Open Writeups page'
 });
+
+/** Derived count of all registered terminal commands */
+export const COMMAND_COUNT = Object.freeze(Object.keys(COMMAND_ICONS).length);
 
 /** Highlight a query match within text, returning escaped HTML string */
 export function highlightMatch(text, query) {

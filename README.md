@@ -1,262 +1,150 @@
-# Career Portal - chai-homelab.com
+# Career Portal — chai-homelab.com
 
-FAANG-quality terminal-themed portfolio with synthwave aesthetic, Azure Functions API gateway, Tailscale-secured Ollama AI, and career fair demo mode.
+Terminal-themed portfolio with synthwave aesthetic, PWA support, and career fair demo mode.
 
-## 🎯 Architecture
+## Quick Start
 
-```
-                         ┌─────────────────────┐
-                         │  Browser (Visitor)   │
-                         │  chai-homelab.com    │
-                         └─────────┬──────────┘
-                                 │ HTTPS / CDN
-                    ════════════ Cloudflare ════════════
-                                 │
-            ┌───────────────────┬───────────────────┐
-            │                   │                   │
-   ┌────────┴────────┐ ──┐  ──┐└────────┴────────┐
-   │ Static Assets   │    │     Azure Functions    │
-   │ (Blob Storage)  │    │  ($0.50/mo tier-free)  │
-   │ - index.html    │    │                        │
-   │ - CSS/JS        │    │ ┌──────────────┐       │
-   │ - PWA SW        │    │ │portfolio-    │       │
-   │                 │    │ │metrics/      │       │
-   │                 │    │ │GitHub OAuth  │       │
-   │                 │    │ │→ Prometheus  │       │
-   │                 │    │ └──────────────┘       │
-   │                 │    │                        │
-   │                 │    │ ┌──────────────┐       │
-   │                 │    │ │portfolio-    │       │
-   │                 │    │ │agent/        │       │
-   │                 │    │ │Ollama Proxy  │       │
-   │                 │    │ └──────┬───────┘       │
-            │                   │                   │
-            │                   │ Tailscale (WireGuard)
-            │                   │ outbound-only tunnel
-            │                   │ (no firewall holes)
-            │                   │
-     ════════ HP Laptop/k3s Cluster ═══════════════
-            │
-   ┌────────┴────────┐
-   │ MeshWatch Stack  │
-   │ - Istio mTLS     │
-   │ - Prometheus     │
-   │ - Grafana        │
-   │ - Loki/Tempo     │
-   │ - Ollama Phi-3   │
-   │ - Minecraft JMX  │
-   └─────────────────┘
+```bash
+npm run dev        # serve on :3000
+npm test           # run full suite (115 tests)
+npm run lint       # ESLint check
+npm run build      # lint + test, copy to ../dist/
 ```
 
-## 🚀 Features
+## Architecture
 
-### Terminal Interface (v2.0)
-- **14 Commands**: help, projects, project, skills, experience, education, resume, about, contact, status, minecraft, ai, demo, clear, theme
-- **Category Filtering**: `projects devops`, `projects cloud`, `projects iot`, `projects web`
-- **Deep-Dive**: `project meshwatch` shows full tech stack, metrics, badges, achievements
-- **Live Status**: `status` shows online/offline, MeshWatch metrics, browser info
-- **Minecraft Stats**: `minecraft` shows live TPS, players, uptime via Azure Functions
-- **AI Assistant**: `ai <question>` asks portfolio Q&A with Ollama Phi-3 (cached fallback)
-- **Demo Mode**: `demo` or click "Start Demo Mode" button for auto-cycling project showcase
+Static site — no build step. Files are copied as-is to `../dist/` or deployed via Cloudflare Pages.
 
-### API Integrations
-- **GitHub OAuth PKCE**: Secure token exchange in browser memory only (`public_repo`, `read:user`)
-- **Azure Functions Gateway**: Whitelisted Prometheus queries only (no raw DB access)
-- **Tailscale Proxy**: Outbound-only WireGuard tunnel to local Ollama Phi-3 ($0 cost, no firewall holes)
+```
+Browser (chai-homelab.com)
+  │ HTTPS / CDN
+Cloudflare Pages (auto-deploy on push to master)
+  │
+├── Static assets: HTML, CSS, JS, icons, config
+├── PWA service worker (offline cache v6)
+└── Azure Functions (optional backend)
+    └── portfolio-contact → Resend API / console log fallback
+```
 
-### Career Fair Demo Mode
-- Auto-cycles through all 6 projects with badges and metrics
-- Pause on any keypress or type `demo stop`
-- Offline fallback: all mock data from `config/career-fair.json`
-- Recruiter view toggle for highlighting achievements
+## Pages
 
-## 📋 Commands
+| Page | URL | Description |
+|------|-----|-------------|
+| Terminal | `/` | Main terminal UI with 28 commands |
+| Project Explorer | `/project-explorer.html` | Card grid with category filters and search |
+| Dashboard | `/dashboard.html` | Live metrics gauges (Minecraft TPS, heap, GC) |
+| Writeups | `/writeups.html` | Technical articles with tag filtering |
+| Contact | `/contact.html` | Email form (posts to Azure Function, falls back to mailto:) |
+| Offline | `/offline.html` | PWA fallback page |
+
+## Terminal Commands
 
 | Command | Description |
 |---------|-------------|
-| `help` | Show available commands + categories + keyboard shortcuts |
-| `projects [category]` | List projects (optional: cloud, devops, iot, web) |
-| `project <name>` | Deep-dive into project (tech stack, badges, metrics, achievements) |
-| `skills [category]` | Show technical skills (optional: category) |
-| `experience [level]` | Show work experience (senior/mid/junior) |
+| `help` | Show all commands + keyboard shortcuts |
+| `projects [category]` | List projects (cloud, devops, iot, web) |
+| `project <name>` | Deep-dive: tech stack, metrics, badges, achievements |
+| `skills [category]` | Show technical skills by category |
+| `skills-visual` | Animated skill progress bars |
+| `timeline` | Project timeline with active period chart |
+| `experience [level]` | Show experience (senior/mid/junior) |
 | `education` | Show education background |
-| `resume` | Download resume text format |
-| `about` | About Chaitanya Kumar |
+| `resume [--txt|--md]` | Display or download resume (text/markdown) |
+| `about` | About Eugene Vincent |
 | `contact` | Contact information |
-| `status` | Show system/live metrics status (requires Azure Functions + GitHub OAuth) |
-| `minecraft` | Show Minecraft server live stats (TPS, players, uptime) |
-| `ai <question>` | Ask AI about your portfolio (Ollama Phi-3 with cached fallback) |
-| `demo [stop]` | Start/stop auto-cycling project showcase |
-| `clear` | Clear terminal output |
-| `theme` | Toggle synthwave/retro theme |
+| `contact --email` | Interactive email form (API → mailto: fallback) |
+| `status` | Online/offline, MeshWatch metrics, browser info |
+| `minecraft` | Minecraft server stats (TPS, players, heap) |
+| `ai <question>` | Portfolio Q&A with cached knowledge fallback |
+| `demo [stop]` | Auto-cycling project showcase |
+| `clear` | Clear terminal |
+| `theme [retro|synthwave]` | Toggle synthwave/retro theme (persists in localStorage) |
+| `matrix [on|off]` | Toggle matrix rain animation |
+| `neofetch` | System info display |
+| `fortune` | Random tech/career fortune |
+| `cowsay <text>` | ASCII cow says your text |
+| `achievements` | View earned badges |
+| `perf` | Performance dashboard (A-F grading) |
+| `explorer` | Open Project Explorer page |
+| `dashboard` | Open Live Dashboard page |
+| `writeups` | Open Writeups page |
 
-## 🛠️ Tech Stack
+### Keyboard Shortcuts
 
-### Frontend
-- **Vanilla JS (ES6 Modules)**: Terminal interface, API clients, visual effects
-- **CSS3 + Animations**: Synthwave theme with CRT effects, neon pulse, matrix rain
-- **PWA**: Service worker caching, web app manifest, offline fallback
-- **Accessibility**: WCAG 2.1 compliant (ARIA live regions, keyboard nav, reduced motion)
+| Key | Action |
+|-----|--------|
+| `Tab` | Autocomplete command |
+| `↑/↓` | Command history |
+| `Ctrl+K` | Command palette overlay |
+| `Esc` | Focus input field |
+| `Ctrl+L` | Clear terminal |
 
-### Backend / Serverless
-- **Azure Functions v2.0**: Python runtime for metrics proxy + AI agent proxy
-- **GitHub OAuth PKCE**: Browser-side token exchange (memory-only storage)
-- **Tailscale**: WireGuard mesh network for secure local Ollama access
+## JS Modules
 
-### Monitoring Stack (k3s Cluster)
-- Istio service mesh with mTLS
-- Prometheus + Grafana + Loki + Tempo observability
-- Ollama Phi-3 for AI-powered incident analysis
-- Minecraft JMX exporter for server metrics
+| Module | Role |
+|--------|------|
+| `terminal.js` | Main controller — commands, palette, demo mode, achievements |
+| `project-catalog.js` | Project metadata (5 projects). `COMMAND_COUNT` derived from helpers |
+| `meshwatch-api.js` | GitHub OAuth PKCE + Azure Functions proxy for Prometheus metrics |
+| `ai-assistant.js` | Ollama Phi-3 via Tailscale; cached knowledge fallback |
+| `contact-api.js` | Contact form client — POSTs to `/api/contact`, falls back to mailto: |
+| `achievements.js` | 10 unlockable badges, localStorage persistence |
+| `audio.js` | Web Audio API keystroke sounds |
+| `performance.js` | Navigation Timing API metrics (TTFB, DCL, FullLoad) |
+| `visual-effects.js` | Matrix rain + neon pulse (respects reduced motion and mobile) |
+| `service-worker.js` | PWA offline cache, fetch-first strategy |
+| `pwa.js` | Service worker registration + online/offline status |
+| `utils/helpers.js` | `escapeHtml`, `normalizeSlug`, `validateUrl`, `COMMAND_COUNT`, `SKILLS_DATA`, `gradePerf` |
 
-## 📦 Installation
+## Azure Functions
 
-```bash
-# Clone repository
-git clone https://github.com/chaitea321/career-portal.git
-cd career-portal
+- `portfolio-contact/func.js` — Contact form handler (Resend API, falls back to console log)
+  - Env vars: `RESEND_API_KEY`, `RECIPIENT_EMAIL`, `RESEND_DOMAIN`
+  - Without env vars: logs to console and returns success (career-fair offline mode)
 
-# Install dependencies (optional for dev)
-npm install
+## Config Files
 
-# Run locally
-npm run dev
+- `config/career-fair.json` — demo mode settings, AI assistant config, mock data
+- `config/minecraft-stats.json` — updated every 10 min by cron job
+- `_headers` — Cloudflare Pages cache headers (31536000s static assets, 600s config)
 
-# Build for production
-npm run build
-```
+## Gotchas
 
-## 🌐 Deployment
+- **No build step** — files are copied as-is. Do not add a bundler or transpiler.
+- **ESLint ignores `js/terminal.js`** — import+comment patterns trigger ESLint parse bugs. If you fix it, update `.eslintignore`.
+- **Tests use native `node --test`** — no mocha/jest. Tests run in pure Node.
+- **`terminal.js` self-instantiates** — `new Terminal()` runs on import. Test files get a live instance.
+- **Theme persists via localStorage** — terminal saves `portfolio-theme`; other pages read it on load.
+- **`COMMAND_COUNT`** is derived from `Object.keys(COMMAND_ICONS).length`. Do not hardcode elsewhere.
+- **Service worker cache name** is `career-portal-v6`. New assets must be added to `ASSETS_TO_CACHE`.
+- **Google Fonts URL** uses `css2?family=` path (not `css?family=`).
 
-### 1. Static Site (Azure Blob Storage)
-
-```bash
-# Deploy to Azure Blob Storage container ($web)
-az storage blob upload-batch \
-  --source ./dist \
-  --destination \$web \
-  --account-name chaihomelab \
-  --account-key ${AZURE_STORAGE_KEY}
-```
-
-### 2. Cloudflare DNS (Dynamic IP)
-
-```bash
-# Generate API token in Cloudflare Dashboard > API Tokens
-# Permissions: Zone Read + DNS Edit, scope: zone.* for chai-homelab.com
-
-export CLOUDFLARE_API_TOKEN="your_token_here"
-export CLOUDFLARE_ZONE_ID="your_zone_id"
-export CURRENT_IP="108.233.139.113"  # Your dynamic public IP
-
-# Run auto-update script (set up cron every 30 mins)
-./scripts/cloudflare-dns-update.sh
-
-# Add to crontab (every 30 minutes)
-echo "*/30 * * * * /path/to/career-portal/scripts/cloudflare-dns-update.sh" | crontab -
-```
-
-### 3. Azure Functions Deployment
+## Testing
 
 ```bash
-cd ../azure-functions
-
-# Deploy portfolio-metrics function
-func deploy portfolio-metrics --settings ../career-portal/local.settings.json
-
-# Deploy portfolio-agent function
-func deploy portfolio-agent --settings ../career-portal/local.settings.json
-
-# Set environment variables via Azure portal or CLI:
-# TAILSCALE_OLLAMA_URL=http://100.x.x.x:11434  (Tailscale tailnet IP)
-# OLLAMA_MODEL=phi-3
-# PROMETHEUS_URL=http://prometheus:9090
-# SERVICE_BUS__fullyQualifiedNamespace=<your-servicebus>
+npm test                    # run all (115 tests)
+node --test tests/terminal.mjs   # single file
 ```
 
-### 4. Tailscale Setup (Local Ollama Access)
+## Deployment
 
-```bash
-# On k3s cluster node (HP laptop)
-curl -fsSL https://tailscale.com/install.sh | sh
-sudo tailscale up --authkey=tskey-xxxxx
+- **Local**: `npm run dev` → http://localhost:3000
+- **Cloudflare Pages**: push to `master` → GitHub Actions runs `npm test` then deploys root dir via `cloudflare/pages-action@v1`
+  - Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
+- **Azure Functions**: deploy `azure-functions/` with Azure CLI; requires `.env` for API keys
 
-# Verify Ollama endpoint is reachable via tailnet IP
-curl http://100.65.214.138:11434/version  # Should return Phi-3 version
+## Style Conventions
 
-# Test Azure Function can reach it (outbound-only, no firewall holes needed)
-```
+- Single quotes, semicolons, 2-space indent (ESLint enforced)
+- ES modules only (`"type": "module"`)
+- All user-facing text goes through `escapeHtml()` before `innerHTML`
+- CSS custom properties for theming (`--neon-*`, `--bg-*`). Retro theme via `body.theme-retro`.
 
-### 5. GitHub OAuth Setup
+## Costs
 
-```bash
-# Register OAuth app at https://github.com/settings/connections/applications
-# Redirect URI: https://chai-homelab.com/auth/callback
-# Scopes: public_repo, read:user
-
-# Store client secret in Azure Functions App Settings (Environment Variables)
-# Note: PKCE flow uses code_verifier stored in sessionStorage only
-```
-
-## 🔧 GitHub Actions Setup
-
-Create these secrets in repository settings:
-
-| Secret | Description |
-|--------|-------------|
-| `AZURE_STORAGE_CONNECTION_STRING` | Azure Blob storage connection string |
-| `CLOUDFLARE_API_TOKEN` | Cloudflare API token (for dynamic DNS) |
-| `AZURE_FUNCTION_CONNECTION_STRING` | Azure Functions deployment connection |
-
-## 💰 Cost Breakdown
-
-| Service | Cost/Month | Notes |
-|---------|------------|-------|
-| Azure Blob Storage | ~$0.50 | First 5GB + 10GB bandwidth free |
-| Azure Functions | $0 | Free tier (1M invocations/mo) |
-| Cloudflare DNS/CDN | $0 | Free tier with SSL, DDoS protection |
-| Tailscale | $0 | Personal plan (<5 devices) |
-| GitHub Actions | $0 | Free minutes for public repos |
-| **Total** | **~$0.50/mo** | **~$6/year** |
-
-## 📊 Metrics
-
-- **Lighthouse Score**: 95+ (Performance, Accessibility, SEO)
-- **Bundle Size**: <150KB (vanilla JS + CSS)
-- **TTI**: <2s (fast terminal response)
-- **Uptime**: 99.9% (Cloudflare CDN)
-- **Tests Passing**: 27/27
-
-## 🎓 Internship-Ready Artifacts
-
-1. **Live Terminal Portfolio with API Integration**: Shows frontend mastery + backend integration via Azure Functions
-2. **Secure Metrics API**: GitHub OAuth PKCE flow whitelisting Prometheus queries (FAANG-quality security)
-3. **Tailscale-Ollama Proxy**: Demonstrates secure outbound-only tunneling to local AI ($0 cost, more impressive than cloud AI)
-4. **Career Fair Demo Mode**: Auto-cycling showcase with offline fallback
-5. **PWA + Accessibility**: WCAG 2.1 compliant with keyboard navigation and screen reader support
-6. **CI/CD Pipeline**: Full GitHub Actions workflow (lint → test → build → deploy)
-7. **Dynamic DNS Automation**: Cloudflare API integration for dynamic IP
-8. **Cost-Optimized Architecture**: $0.50/month total vs $10+/month for cloud alternatives
-
-## 🔄 Deployment Checklist
-
-### Pre-Career Fair
-- [ ] Verify `npm run build` passes (lint + test + dist)
-- [ ] Confirm Azure Blob deployment is current
-- [ ] Test career fair demo mode (`demo` command or button)
-- [ ] Verify AI assistant cached answers work without Ollama
-- [ ] Check PWA offline fallback works
-
-### Live Demo Flow
-1. Open terminal → Type `help` to show all commands
-2. Run `projects devops` to show project filtering
-3. Run `project meshwatch` for deep-dive on flagship project
-4. Run `status` to show live metrics (if Azure Functions deployed)
-5. Run `minecraft` to show Minecraft monitoring stats
-6. Run `ai Tell me about MeshWatch` for AI Q&A demo
-7. Click "Start Demo Mode" for auto-cycling showcase
-
-## 📝 License
-
-MIT License - See LICENSE file for details
-# Trigger CI/CD deployment
+| Service | Cost/Month |
+|---------|------------|
+| Cloudflare Pages + DNS | $0 (free tier) |
+| Azure Functions | $0 (free tier) |
+| Tailscale | $0 (personal plan) |
+| **Total** | **$0/mo** |

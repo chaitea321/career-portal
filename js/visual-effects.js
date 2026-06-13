@@ -16,6 +16,12 @@ class VisualEffects {
       return;
     }
     
+    // Disable matrix rain on mobile for performance
+    if (window.innerWidth < 768) {
+      this.enabled = false;
+      return;
+    }
+    
     // Lazy initialize after page load for better performance
     if (document.readyState === 'complete') {
       this.createMatrixRain();

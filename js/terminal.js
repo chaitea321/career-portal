@@ -5,6 +5,7 @@ import { getProjects, getProject, generateBadges } from './project-catalog.js';
 import MeshWatchAPI from './meshwatch-api.js';
 import AIAssistant from './ai-assistant.js';
 import Achievements from './achievements.js';
+import ContactAPI from './contact-api.js';
 import { escapeHtml, normalizeSlug, validateUrl, COMMAND_ICONS, COMMAND_DESCS, highlightMatch, createPaletteItem, filterCommands, SKILLS_DATA, PERF_THRESHOLDS, gradePerf, computeOverallGrade } from './utils/helpers.js';
 
 // Lazy import VisualEffects for matrix Easter egg
@@ -28,7 +29,7 @@ class Terminal {
       'experience', 'education', 'resume', 'about', 'contact',
       'status', 'minecraft', 'ai', 'demo', 'clear', 'theme',
       'matrix', 'timeline', 'neofetch', 'fortune', 'cowsay',
-      'achievements', 'perf', 'explorer', 'dashboard'
+      'achievements', 'perf', 'explorer', 'dashboard', 'writeups'
     ];
     this.announcementEl = null;
     this._announcementTimeout = null;
@@ -138,8 +139,8 @@ class Terminal {
       this.input.value = this.history[this.history.length - 1 - this.historyIndex];
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
-      if (this.historyIndex > 0) {
-        this.historyIndex--;
+      if (this.historyIndex >= 0 && this.historyIndex < this.history.length - 1) {
+        this.historyIndex++;
         this.input.value = this.history[this.history.length - 1 - this.historyIndex];
       } else {
         this.historyIndex = -1;
@@ -165,6 +166,9 @@ class Terminal {
           } else if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
             e.preventDefault();
             this.toggleCommandPalette();
+          } else if (e.key === 'Escape' && document.activeElement !== this.input && !this.isDemoMode) {
+            e.preventDefault();
+            this.input.focus();
           }
         });
 
@@ -249,9 +253,11 @@ class Terminal {
         case 'theme':
           if (args === 'retro') {
             document.body.classList.add('theme-retro');
+            localStorage.setItem('portfolio-theme', 'retro');
             this.log('\u2705 Theme set to retro mode', 'success');
           } else if (args === 'synthwave') {
             document.body.classList.remove('theme-retro');
+            localStorage.setItem('portfolio-theme', 'synthwave');
             this.log('\u266F Theme set to synthwave mode', 'success');
           } else {
             this.toggleTheme();
@@ -309,15 +315,18 @@ class Terminal {
          case 'explorer':
            this.openPage('/project-explorer.html', 'Project Explorer');
            break;
-         case 'dashboard':
-           this.openPage('/dashboard.html', 'Live Dashboard');
-           break;
-         default:
+        case 'dashboard':
+            this.openPage('/dashboard.html', 'Live Dashboard');
+            break;
+          case 'writeups':
+            this.openPage('/writeups.html', 'Writeups');
+            break;
+          default:
           this.log(`Unknown command: ${cmd}`, 'warning');
       }
 
-      // Track achievements for valid commands
-      if (typeof document !== 'undefined' && cmd !== 'clear' && cmd !== 'help') {
+      // Track achievements for valid commands only
+      if (typeof document !== 'undefined' && cmd !== 'clear' && cmd !== 'help' && this.commandHistory.includes(cmd)) {
         const newUnlocks = this.achievements.record(cmd, args);
         newUnlocks.forEach(a => {
           this.log(`\n${'\u{1f3af}'} Achievement Unlocked: ${a.icon} ${a.name} — ${a.desc}`, 'success');
@@ -357,7 +366,8 @@ class Terminal {
       { cmd: 'perf', desc: 'Performance dashboard (A-F grading)' },
       { cmd: 'contact --email', desc: 'Interactive email form' },
       { cmd: 'explorer', desc: 'Open Project Explorer page' },
-      { cmd: 'dashboard', desc: 'Open Live Dashboard page' }
+      { cmd: 'dashboard', desc: 'Open Live Dashboard page' },
+      { cmd: 'writeups', desc: 'Open Writeups/blog page' }
     ];
 
     const a11yShortcuts = [
@@ -628,31 +638,23 @@ class Terminal {
 
     let stepIndex = 0;
     const formData = {};
+    const contactAPI = new ContactAPI();
 
     const askNext = () => {
       if (stepIndex >= steps.length) {
-        // Build mailto: link and open it
-        const name = encodeURIComponent(formData.name);
-        const subject = encodeURIComponent(formData.subject);
-        const body = encodeURIComponent(`Hi Eugene,\n\nFrom: ${formData.name}\n\n${formData.message}`);
-        const mailto = `mailto:eugene.vince55@gmail.com?subject=${subject}&body=${body}`;
+        // Submit via API (falls back to mailto: if backend unavailable)
+        this.log('\nSending email...\n', 'info');
 
-        this.log('\nForm complete!', 'success');
-        this.log('\nOpening email client...\n', 'info');
-        this.log('  To: eugene.vince55@gmail.com', 'info');
-        this.log(`  Subject: ${formData.subject}`, 'info');
-        this.log(`  From: ${formData.name}\n`, 'info');
+        contactAPI.submit(formData).then(result => {
+          this.log(`\n${result.message}`, result.fallback ? 'warning' : 'success');
+          this.divider();
+          stepIndex = -1; // Mark as complete
+        }).catch(err => {
+          this.log(`\nError sending email: ${err.message || 'Unknown error'}`, 'warning');
+          this.divider();
+          stepIndex = -1;
+        });
 
-        // Open mailto link
-        const a = document.createElement('a');
-        a.href = mailto;
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-
-        this.divider();
-        stepIndex = -1; // Mark as complete
         return;
       }
 
@@ -681,12 +683,11 @@ class Terminal {
             return;
           }
 
-          formData[step.key] = value;
-          this.log('  \u2705 Recorded.', 'success');
+formData[step.key] = value;
+          this.log('  ✓ Recorded.', 'success');
           stepIndex++;
           this.input.value = '';
           this.input.onkeydown = null;
-          this.bindEvents(); // Rebind normal events, then ask next
           if (stepIndex >= 0) askNext();
         } else if (e.key === 'Escape') {
           e.preventDefault();
@@ -900,7 +901,7 @@ azure-functions - Serverless API gateway
   \u2022 Pydantic validation models
 
 career-portal - Terminal portfolio (you are here)
-  \u2022 Interactive terminal with 14+ commands and autocomplete
+   \u2022 Interactive terminal with ${this.commandHistory.length} commands and autocomplete
   \u2022 PWA support with service worker offline caching
   \u2022 WCAG 2.1 accessible (ARIA, keyboard nav, screen reader)
 ${'='.repeat(40)}
@@ -1198,6 +1199,7 @@ Generated from chai-homelab.com portfolio terminal`;
     if (typeof document === 'undefined') return;
     document.body.classList.toggle('theme-retro');
     const isRetro = document.body.classList.contains('theme-retro');
+    localStorage.setItem('portfolio-theme', isRetro ? 'retro' : 'synthwave');
     this.log(`\n${isRetro ? '\u2705' : '\u266F'} Theme toggled to ${isRetro ? 'retro' : 'synthwave'} mode`, 'info');
   }
 
@@ -1414,18 +1416,16 @@ Generated from chai-homelab.com portfolio terminal`;
     if (currentLine) wrapped.push(currentLine);
 
     const bubbleWidth = Math.max(...wrapped.map(l => l.length)) + 2;
-    const topBorder = '/'.padEnd(bubbleWidth, '-').replace(/[/-]$/, '\\');
-    const bottomBorder = '\\'.padStart(bubbleWidth, '-').replace(/[/\\]$/, '/');
 
     this.divider();
     this.log('', 'default');
 
     if (wrapped.length === 1) {
-      this.log(` ${' '.repeat(bubbleWidth - 2)} `, 'info');
+      this.log(` ${'─'.repeat(bubbleWidth)} `, 'info');
       this.log(` <${wrapped[0]}>`, 'info');
-      this.log(` ${' '.repeat(bubbleWidth - 2)} `, 'info');
+      this.log(` ${'─'.repeat(bubbleWidth)} `, 'info');
     } else {
-      this.log(` ${' '.repeat(bubbleWidth - 2)} `, 'info');
+      this.log(` ${'─'.repeat(bubbleWidth)} `, 'info');
       wrapped.forEach((line, i) => {
         const padded = line.padEnd(bubbleWidth - 2);
         const isLast = i === wrapped.length - 1;
@@ -1435,7 +1435,7 @@ Generated from chai-homelab.com portfolio terminal`;
           this.log(` |${padded}|`, 'info');
         }
       });
-      this.log(` ${' '.repeat(bubbleWidth - 2)} `, 'info');
+      this.log(` ${'─'.repeat(bubbleWidth)} `, 'info');
     }
 
     this.log('        \\   ^__^', 'info');
@@ -1583,8 +1583,8 @@ Generated from chai-homelab.com portfolio terminal`;
     results.innerHTML = '';
     const q = query.toLowerCase().trim();
 
-    // Build command list (deduplicated, perf always included)
-    const allCommands = [...new Set([...this.commandHistory, 'perf'])];
+    // Build command list
+    const allCommands = [...this.commandHistory];
 
     const filtered = filterCommands(allCommands, q);
 
@@ -1622,16 +1622,15 @@ Generated from chai-homelab.com portfolio terminal`;
     const domContentLoaded = Math.round(dcltStart - perf.startTime);
     const fullLoad = perf.loadEventStart ? Math.round(perf.loadEventStart - perf.startTime) : null;
 
-    // Fallback: use PerformanceObserver if Navigation Timing not available
+    // Fallback: when Navigation Timing API unavailable, show N/A instead of fake numbers
     let ttfbEst = ttfb;
     let dcltEst = domContentLoaded;
     let fullLoadEst = fullLoad;
 
-    if (!ttfbEst && now > 0) {
-      // Estimate from performance.now() (time since page load started)
-      ttfbEst = Math.round(now * 0.6);
-      dcltEst = Math.round(now * 0.8);
-      fullLoadEst = Math.round(now);
+    if (!ttfbEst) {
+      ttfbEst = null;
+      dcltEst = null;
+      fullLoadEst = null;
     }
 
     // A-F grading thresholds (extracted to constants)
@@ -1688,18 +1687,9 @@ Generated from chai-homelab.com portfolio terminal`;
 
   // ---- Core Methods ---
 
-  /** Guard: exit early if not in browser or output element missing */
-  _guard() {
+/** Guard: exit early if not in browser or output element missing */
+   _guard() {
     return typeof document === 'undefined' || !this.output;
-  }
-
-  /** Create a styled output line with type class */
-  _line(text, type = 'default') {
-    const line = document.createElement('div');
-    line.className = `output-line ${type}`;
-    line.textContent = text;
-    this.output.appendChild(line);
-    this.scrollToBottom();
   }
 
   /** Create a project-style card with innerHTML */

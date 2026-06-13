@@ -1,6 +1,6 @@
 // Project Catalog - Centralized project metadata for portfolio showcase
 
-import { escapeHtml, normalizeSlug } from './utils/helpers.js';
+import { escapeHtml, normalizeSlug, COMMAND_COUNT } from './utils/helpers.js';
 
 const PROJECT_CATALOG = {
   'meshwatch': {
@@ -68,9 +68,9 @@ const PROJECT_CATALOG = {
       'Automated alerting with incident responder pipeline'
     ],
     demoNote: 'Demo mode shows cached metrics. Live data requires Azure Functions + Tailscale deployment.'
-   },
+  },
 
-   'career-portal': {
+  'career-portal': {
     name: 'Career Portal',
     slug: 'career-portal',
     description: 'FAANG-quality terminal-themed portfolio with synthwave aesthetic, PWA support, accessibility (WCAG 2.1), and dynamic Azure Functions integration.',
@@ -94,7 +94,7 @@ const PROJECT_CATALOG = {
     githubUrl: 'https://github.com/chaitea321/career-portal',
     liveUrl: 'https://chai-homelab.com',
     keyAchievements: [
-      'Interactive terminal with 14+ commands and autocomplete',
+      `Interactive terminal with ${COMMAND_COUNT} commands and autocomplete`,
       'PWA support with service worker offline caching',
       'WCAG 2.1 accessible (ARIA, keyboard nav, screen reader)',
       'Azure Functions API gateway with GitHub OAuth'
@@ -215,7 +215,10 @@ function getProject(identifier) {
 // Helper: Generate badge HTML string (with escaping for safety)
 function generateBadges(badges) {
   if (!badges || badges.length === 0) return '';
-  return badges.map(b => `<span class="project-badge">${escapeHtml(b)}</span>`).join(' ');
+  return badges
+    .filter(b => b != null && String(b).trim() !== '')
+    .map(b => `<span class="project-badge">${escapeHtml(b)}</span>`)
+    .join(' ');
 }
 
 export { PROJECT_CATALOG, DEFAULT_PROJECT_ORDER, getProjects, getProject, generateBadges };

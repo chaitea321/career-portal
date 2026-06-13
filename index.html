@@ -11,7 +11,7 @@
   <link rel="icon" type="image/png" sizes="96x96" href="/icons/icon-96.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
   <a href="#terminal-output" class="skip-link">Skip to terminal</a>
@@ -46,8 +46,13 @@
       <p>Type <span class="command">help</span> to see available commands</p>
     </div>
     <div class="footer-right">
-      <a href="/project-explorer" class="demo-btn" style="text-decoration:none;" aria-label="Project Explorer">📂 Projects</a>
-      <a href="/dashboard" class="demo-btn" style="text-decoration:none;" aria-label="Live Dashboard">📊 Dashboard</a>
+      <button class="ct-hamburger" id="mobile-menu-btn" aria-label="Toggle navigation menu" aria-expanded="false">&#x2630;</button>
+      <nav class="mobile-nav" id="mobile-nav">
+        <a href="/project-explorer.html" class="demo-btn" style="text-decoration:none;" aria-label="Project Explorer">📂 Projects</a>
+        <a href="/dashboard.html" class="demo-btn" style="text-decoration:none;" aria-label="Live Dashboard">📊 Dashboard</a>
+        <a href="/writeups.html" class="demo-btn" style="text-decoration:none;" aria-label="Writeups">✎ Writeups</a>
+        <a href="/contact.html" class="demo-btn" style="text-decoration:none;" aria-label="Contact">✉ Contact</a>
+      </nav>
       <button id="demo-start-btn" class="demo-btn" aria-label="Start career fair demo mode">🎯 Start Demo Mode</button>
       <span id="online-status" class="status-indicator" aria-live="polite" aria-label="Network status"></span>
     </div>
@@ -57,5 +62,18 @@
   <script type="module" src="js/performance.js"></script>
   <script src="js/pwa.js"></script>
   <script type="module" src="js/visual-effects.js"></script>
+  <script>
+    // Mobile hamburger menu toggle
+    const menuBtn = document.getElementById('mobile-menu-btn');
+    const mobileNav = document.getElementById('mobile-nav');
+
+    if (menuBtn && mobileNav) {
+      menuBtn.addEventListener('click', () => {
+        const isOpen = mobileNav.classList.toggle('open');
+        menuBtn.setAttribute('aria-expanded', isOpen);
+        menuBtn.classList.toggle('active', isOpen);
+      });
+    }
+  </script>
 </body>
 </html>

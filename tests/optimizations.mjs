@@ -156,12 +156,6 @@ describe('Bug Fixes & New Helpers', () => {
     });
   });
 
-  describe('Architecture: _line method', () => {
-    it('_line exists and is a function', () => {
-      assert.strictEqual(typeof terminal._line, 'function', '_line should be a method');
-    });
-  });
-
   describe('Architecture: _card method', () => {
     it('_card exists and is a function', () => {
       assert.strictEqual(typeof terminal._card, 'function', '_card should be a method');
