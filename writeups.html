@@ -190,13 +190,6 @@
       pointer-events: none;
     }
 
-    .wp-card:nth-child(1) { animation-delay: 0.02s; }
-    .wp-card:nth-child(2) { animation-delay: 0.06s; }
-    .wp-card:nth-child(3) { animation-delay: 0.10s; }
-    .wp-card:nth-child(4) { animation-delay: 0.14s; }
-    .wp-card:nth-child(5) { animation-delay: 0.18s; }
-    .wp-card:nth-child(6) { animation-delay: 0.22s; }
-
     @keyframes wp-card-in {
       from { opacity: 0; transform: translateY(16px); }
       to { opacity: 1; transform: translateY(0); }
@@ -478,7 +471,7 @@
               <button class="wp-filter-btn" data-filter="ai">🤖 AI/ML</button>
               <button class="wp-filter-btn" data-filter="cloud">💰 Cloud</button>
             </div>
-            <input type="text" class="wp-search" id="wp-search" placeholder="Search articles..." autocomplete="off" spellcheck="false">
+            <input type="text" class="wp-search" id="wp-search" placeholder="Search articles..." autocomplete="off">
           </div>
 
           <div class="wp-grid" id="wp-grid" role="list" aria-label="Technical writeups"></div>
@@ -502,18 +495,13 @@
     </div>
   </footer>
 
-  <script>
-    // Mobile hamburger menu toggle
-    const menuBtn = document.getElementById('mobile-menu-btn');
-    const mobileNav = document.getElementById('mobile-nav');
-    if (menuBtn && mobileNav) {
-      menuBtn.addEventListener('click', () => {
-        const isOpen = mobileNav.classList.toggle('open');
-        menuBtn.setAttribute('aria-expanded', isOpen);
-        menuBtn.classList.toggle('active', isOpen);
-      });
-    }
+  <script type="module">
+    import { initMobileNav } from '/js/mobile-nav.js';
+    import { escapeHtml } from '/js/utils/helpers.js';
 
+    initMobileNav();
+  </script>
+  <script>
     // === DATA ===
     const WRITEUPS = [
       {
@@ -657,14 +645,19 @@
     let activeFilter = '';
     let activeQuery = '';
 
-    function escapeHtml(str) {
-      if (!str) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#x27;');
+    // Sanitize HTML for writeup content - only allows safe tags
+    function sanitizeHtml(html) {
+      if (!html) return '';
+      const allowedTags = ['p','strong','em','ul','ol','li','code','br','h1','h2','h3','h4','blockquote'];
+      const allowedAttr = ['class'];
+      let result = html;
+      // Strip all tags not in the allowed list
+      result = result.replace(/<[^>]*>/g, (tag) => {
+        const tagName = tag.match(/^<\s*([a-zA-Z]+)/)?.[1]?.toLowerCase();
+        if (!tagName || !allowedTags.includes(tagName)) return '';
+        return tag;
+      });
+      return result;
     }
 
     function renderWriteups() {
@@ -722,7 +715,7 @@
       overlay.className = 'wp-modal-overlay';
 
       overlay.innerHTML = `
-        <div class="wp-modal" role="dialog" aria-modal="true" aria-label="${escapeHtml(article.title)}">
+        <div class="wp-modal" role="dialog" aria-label="${escapeHtml(article.title)}">
           <button class="wp-modal-close" aria-label="Close article">&times;</button>
           <div class="wp-modal-header">
             <div class="wp-modal-title">${escapeHtml(article.title)}</div>
@@ -731,7 +724,7 @@
               <span class="read-time">&#x1f56c; ${escapeHtml(article.readTime)}</span>
             </div>
           </div>
-          <div class="wp-modal-body">${article.content}</div>
+          <div class="wp-modal-body">${sanitizeHtml(article.content)}</div>
           <div class="wp-modal-tags">
             ${article.tags.map(t => `<span class="wp-modal-tag">${escapeHtml(t)}</span>`).join('')}
           </div>
@@ -765,17 +758,7 @@
       renderWriteups();
     });
 
-    // Online status indicator
-    function updateOnlineStatus(online) {
-      const el = document.getElementById('online-status');
-      if (!el) return;
-      el.innerHTML = `<span class="status-dot"></span> ${online ? 'Online' : 'Offline'}`;
-      el.className = `status-indicator ${online ? 'online' : 'offline'}`;
-    }
-
-    updateOnlineStatus(navigator.onLine);
-    window.addEventListener('online', () => updateOnlineStatus(true));
-    window.addEventListener('offline', () => updateOnlineStatus(false));
+    // Online status handled by pwa.js globally
 
     // Theme persistence
     if (localStorage.getItem('portfolio-theme') === 'retro') {

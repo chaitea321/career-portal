@@ -479,20 +479,12 @@
     </div>
   </footer>
 
-  <script>
-    // Mobile hamburger menu toggle
-    const menuBtn = document.getElementById('mobile-menu-btn');
-    const mobileNav = document.getElementById('mobile-nav');
-    if (menuBtn && mobileNav) {
-      menuBtn.addEventListener('click', () => {
-        const isOpen = mobileNav.classList.toggle('open');
-        menuBtn.setAttribute('aria-expanded', isOpen);
-        menuBtn.classList.toggle('active', isOpen);
-      });
-    }
+  <script type="module">
+    import { initMobileNav } from '/js/mobile-nav.js';
+    import { COMMAND_COUNT, escapeHtml } from '/js/utils/helpers.js';
+    import PROJECT_CATALOG from '/js/project-catalog.js';
 
-    // === DATA ===
-    // === DATA ===
+    initMobileNav();
 
     const MINECRAFT_DEFAULTS = {
       server: { name: "Eugene's Homelab MC", version: "PaperMC 26.1.2", javaVersion: "Java 25" },
@@ -509,12 +501,13 @@
     // === RENDER FUNCTIONS ===
 
     function renderStats() {
+      const projectCount = Object.keys(PROJECT_CATALOG).length;
       document.getElementById('db-stats').innerHTML = [
-        { icon: '📦', value: '5', label: 'Projects Deployed' },
-        { icon: '⚡', value: '25', label: 'Terminal Commands' },
+        { icon: '📦', value: String(projectCount), label: 'Projects Deployed' },
+        { icon: '⚡', value: String(COMMAND_COUNT), label: 'Terminal Commands' },
         { icon: '💰', value: '$5.12', label: 'Monthly Cost' },
         { icon: '📈', value: '99.9%', label: 'Infra Uptime' },
-        { icon: '🧪', value: '102', label: 'Tests Passing' }
+        { icon: '🧪', value: '123', label: 'Tests Passing' }
       ].map(s => `
         <div class="db-stat-card">
           <div class="db-stat-icon">${s.icon}</div>
@@ -644,11 +637,6 @@
       `).join('');
     }
 
-    function escapeHtml(str) {
-      if (!str) return '';
-      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    }
-
     // === DATA FETCHING ===
 
     async function loadMinecraftStats() {
@@ -669,14 +657,7 @@
       renderMinecraft(stats);
     }
 
-    // === ONLINE STATUS ===
-
-    function updateOnlineStatus(online) {
-      const el = document.getElementById('online-status');
-      if (!el) return;
-      el.innerHTML = `<span class="status-dot"></span> ${online ? 'Online' : 'Offline'}`;
-      el.className = `status-indicator ${online ? 'online' : 'offline'}`;
-    }
+    // Online status handled by pwa.js globally
 
     // === INIT ===
 
@@ -685,10 +666,6 @@
       renderMinecraft(MINECRAFT_DEFAULTS);
       renderCost();
       renderSysStatus();
-
-      updateOnlineStatus(navigator.onLine);
-      window.addEventListener('online', () => updateOnlineStatus(true));
-      window.addEventListener('offline', () => updateOnlineStatus(false));
 
       // Try to load live data
       refreshDashboard();

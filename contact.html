@@ -294,19 +294,10 @@
   </footer>
 
   <script type="module">
-    // Mobile hamburger menu toggle
-    const menuBtn = document.getElementById('mobile-menu-btn');
-    const mobileNav = document.getElementById('mobile-nav');
-    if (menuBtn && mobileNav) {
-      menuBtn.addEventListener('click', () => {
-        const isOpen = mobileNav.classList.toggle('open');
-        menuBtn.setAttribute('aria-expanded', isOpen);
-        menuBtn.classList.toggle('active', isOpen);
-      });
-    }
+    import { initMobileNav } from '/js/mobile-nav.js';
+    import ContactAPI from '/js/contact-api.js';
 
-    import ContactAPI from '/js/contact-api.js';
-    import ContactAPI from '/js/contact-api.js';
+    initMobileNav();
 
     const form = document.getElementById('contact-form');
     const submitBtn = document.getElementById('ct-submit-btn');
@@ -363,17 +354,7 @@
       statusEl.textContent = '';
     }
 
-    // Online status indicator
-    function updateOnlineStatus(online) {
-      const el = document.getElementById('online-status');
-      if (!el) return;
-      el.innerHTML = `<span class="status-dot"></span> ${online ? 'Online' : 'Offline'}`;
-      el.className = `status-indicator ${online ? 'online' : 'offline'}`;
-    }
-
-    updateOnlineStatus(navigator.onLine);
-    window.addEventListener('online', () => updateOnlineStatus(true));
-    window.addEventListener('offline', () => updateOnlineStatus(false));
+    // Online status handled by pwa.js globally
 
     // Theme persistence
     if (localStorage.getItem('portfolio-theme') === 'retro') {

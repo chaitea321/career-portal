@@ -173,6 +173,11 @@
       animation: pe-card-in 0.4s ease-out both;
     }
 
+    @keyframes pe-card-in {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     .pe-card::before {
       content: '';
       position: absolute;
@@ -182,17 +187,6 @@
       bottom: 0;
       background: linear-gradient(135deg, rgba(188, 19, 254, 0.03), transparent 60%);
       pointer-events: none;
-    }
-
-    .pe-card:nth-child(1) { animation-delay: 0.02s; }
-    .pe-card:nth-child(2) { animation-delay: 0.06s; }
-    .pe-card:nth-child(3) { animation-delay: 0.10s; }
-    .pe-card:nth-child(4) { animation-delay: 0.14s; }
-    .pe-card:nth-child(5) { animation-delay: 0.18s; }
-
-    @keyframes pe-card-in {
-      from { opacity: 0; transform: translateY(16px); }
-      to { opacity: 1; transform: translateY(0); }
     }
 
     .pe-card:hover {
@@ -536,7 +530,7 @@
               <button class="pe-filter-btn" data-filter="iot">📡 IoT</button>
               <button class="pe-filter-btn" data-filter="web">🌐 Web</button>
             </div>
-            <input type="text" class="pe-search" id="pe-search" placeholder="Search projects..." autocomplete="off" spellcheck="false">
+            <input type="text" class="pe-search" id="pe-search" placeholder="Search projects..." autocomplete="off">
           </div>
 
           <div class="pe-grid" id="pe-grid" role="list" aria-label="Project cards"></div>
@@ -560,166 +554,39 @@
     </div>
   </footer>
 
-  <script>
-    // Load project data
-    const PROJECTS = [
-      {
-        name: 'MeshWatch',
-        slug: 'meshwatch',
-        category: 'devops',
-        description: 'Cost-optimized service mesh observability platform on k3s Kubernetes with Istio mTLS, OpenTelemetry, and Ollama Phi-3 AI incident analysis.',
-        tags: ['cloud-native', 'kubernetes', 'service-mesh', 'ai-ops'],
-        badges: ['⭐ Production', '🤖 AI-Powered', '💰 Cost-Optimized'],
-        techStack: [
-          { name: 'Kubernetes (k3s)', level: 'Core' },
-          { name: 'Istio Service Mesh', level: 'mTLS, Traffic Splitting' },
-          { name: 'Prometheus + Grafana', level: 'Metrics & Dashboards' },
-          { name: 'Loki', level: 'Log Aggregation' },
-          { name: 'Tempo', level: 'Distributed Tracing' },
-          { name: 'Ollama Phi-3', level: 'AI Incident Analysis' },
-          { name: 'Flagger', level: 'Canary Deployments' }
-        ],
-        metrics: {
-          'Cost Savings': '$7/mo vs serverless',
-          'Pods': '15 deployed',
-          'Services': '5 monitored',
-          'Response Time': '45ms',
-          'Monthly Cost': '$5.12'
-        },
-        achievements: [
-          'Reduced monitoring costs by 60% vs serverless alternatives',
-          'Implemented AI-powered incident analysis with Ollama Phi-3',
-          'Automated canary deployments with Flagger rollback',
-          'Full observability stack (metrics, traces, logs) on $5/month'
-        ],
-        githubUrl: 'https://github.com/chaitea321/meshwatch',
-        liveUrl: 'https://chai-homelab.com/grafana',
-        demoNote: 'Live data requires Azure Functions + Tailscale deployment.'
-      },
-      {
-        name: 'Minecraft Server Monitoring',
-        slug: 'minecraft-monitoring',
-        category: 'iot',
-        description: 'Full-stack Minecraft server observability with Istio service mesh, Prometheus metrics (TPS, heap, players), Discord bot integration, and automated alerting.',
-        tags: ['minecraft', 'service-mesh', 'discord-bot', 'monitoring'],
-        badges: ['⭐ Live', '🎮 Discord Bot', '📊 Real-time'],
-        techStack: [
-          { name: 'PaperMC 26.1.2', level: 'Java 25 Game Server' },
-          { name: 'JMX Exporter', level: 'TPS, Heap, GC Metrics' },
-          { name: 'RCON Protocol', level: 'Server Control' },
-          { name: 'Discord.py Bot', level: '10 Slash Commands' },
-          { name: 'Prometheus + Grafana', level: 'Real-time Dashboards' },
-          { name: 'Flagger', level: 'Canary Deployments' }
-        ],
-        metrics: {
-          'TPS': '20 (monitored)',
-          'Players': 'Tracked',
-          'Uptime': '99.8%',
-          'GC Pause': '45ms',
-          'Alerts Today': '0'
-        },
-        achievements: [
-          'Integrated JMX + RCON exporters for real-time Minecraft metrics',
-          'Discord bot with 10 slash commands (/status, /players, /tps, etc.)',
-          'Implemented AI-powered lag analysis via Ollama Phi-3',
-          'Automated alerting with incident responder pipeline'
-        ],
-        githubUrl: 'https://github.com/chaitea321/minecraft-monitoring',
-        liveUrl: 'https://chai-homelab.com/grafana/d/minecraft',
-        demoNote: 'Live data requires Azure Functions + Tailscale deployment.'
-      },
-      {
-        name: 'Monitoring Stack',
-        slug: 'monitoring',
-        category: 'devops',
-        description: 'Production-grade monitoring platform with ArgoCD GitOps, External Secrets Operator, cert-manager TLS, and Discord integration for automated alerting.',
-        tags: ['kubernetes', 'argocd', 'prometheus', 'loki'],
-        badges: ['🏷 Production', '🔗 GitOps', '🔖 Secure'],
-        techStack: [
-          { name: 'ArgoCD', level: 'GitOps / App of Apps' },
-          { name: 'External Secrets Operator', level: 'Azure Key Vault Backend' },
-          { name: 'cert-manager', level: "Let's Encrypt TLS" },
-          { name: 'kube-prometheus-stack', level: 'v85.2.1 Helm Chart' },
-          { name: 'Loki + Promtail', level: 'Log Aggregation (7d retention)' }
-        ],
-        metrics: {
-          'Services': '5 monitored',
-          'Alert Rules': '7',
-          'Grafana Panels': '20',
-          'Log Retention': '7 days'
-        },
-        achievements: [
-          'ArgoCD App of Apps pattern for multi-namespace management',
-          'External Secrets Operator with Azure Key Vault backend',
-          'cert-manager with Lets Encrypt TLS auto-provisioning',
-          '20-panel Grafana dashboard for Minecraft monitoring'
-        ],
-        githubUrl: null,
-        liveUrl: 'https://chai-homelab.com/loki',
-        demoNote: 'Live data requires Tailscale + Prometheus access.'
-      },
-      {
-        name: 'Azure Functions',
-        slug: 'azure-functions',
-        category: 'cloud',
-        description: 'Serverless Python functions for homelab service health monitoring and alert processing via Azure Service Bus with Discord webhook integration.',
-        tags: ['serverless', 'python', 'service-bus', 'discord'],
-        badges: ['☁️ Serverless', '💬 Webhooks', '📊 Health Checks'],
-        techStack: [
-          { name: 'Azure Functions v2.0', level: 'Python Runtime' },
-          { name: 'Service Bus Trigger', level: 'Incident Events Topic' },
-          { name: 'Timer Trigger', level: 'Health Checker (15min interval)' },
-          { name: 'Pydantic', level: 'Data Validation Models' },
-          { name: 'aiohttp', level: 'Async HTTP Client' }
-        ],
-        metrics: {
-          'Functions': '2 deployed',
-          'Health Check': 'Every 15 min',
-          'Topic': 'incident-events',
-          'Routing': 'Discord Embeds'
-        },
-        achievements: [
-          'Health checker function with 15-minute cron interval',
-          'Service Bus trigger for incident event processing',
-          'Deduplication windows (5-min) to prevent alert storms',
-          'Pydantic models for Service Bus message validation'
-        ],
-        githubUrl: null,
-        liveUrl: null,
-        demoNote: 'Live data requires Azure Functions deployment.'
-      },
-      {
-        name: 'Career Portal',
-        slug: 'career-portal',
-        category: 'web',
-        description: 'FAANG-quality terminal-themed portfolio with synthwave aesthetic, PWA support, accessibility (WCAG 2.1), and dynamic Azure Functions integration.',
-        tags: ['portfolio', 'pwa', 'accessibility', 'synthwave'],
-        badges: ['🎯 Synthwave', '♻️ Accessible', '📦 PWA Ready'],
-        techStack: [
-          { name: 'Vanilla JS (ES6)', level: 'Terminal Interface' },
-          { name: 'CSS3 + Animations', level: 'Synthwave Theme' },
-          { name: 'PWA Manifest', level: 'Offline Support' },
-          { name: 'Azure Blob Storage', level: '$0.50/month Hosting' },
-          { name: 'Cloudflare CDN', level: 'Free Tier + SSL' },
-          { name: 'GitHub OAuth', level: 'API Authentication' }
-        ],
-        metrics: {
-          'Tests': '102 passing',
-          'Commands': '25 available',
-          'Lighthouse': '95+',
-          'Accessibility': 'WCAG 2.1'
-        },
-        achievements: [
-          'Interactive terminal with 26 commands and autocomplete',
-          'PWA support with service worker offline caching',
-          'WCAG 2.1 accessible (ARIA, keyboard nav, screen reader)',
-          'Azure Functions API gateway with GitHub OAuth'
-        ],
-        githubUrl: 'https://github.com/chaitea321/career-portal',
-        liveUrl: 'https://chai-homelab.com',
-        demoNote: 'You are currently viewing this project!'
+  <script type="module">
+    import { initMobileNav } from '/js/mobile-nav.js';
+    import PROJECT_CATALOG from '/js/project-catalog.js';
+    import { escapeHtml } from '/js/utils/helpers.js';
+
+    initMobileNav();
+
+    // Online status handled by pwa.js globally
+
+    // Transform catalog data into explorer format
+    function transformProject(slug, cat) {
+      const metrics = {};
+      for (const [key, val] of Object.entries(cat.metrics || {})) {
+        metrics[key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())] = String(val);
       }
-    ];
+
+      return {
+        name: cat.name,
+        slug: cat.slug,
+        category: cat.category,
+        description: cat.description,
+        tags: cat.tags || [],
+        badges: cat.badges || [],
+        techStack: cat.techStack || [],
+        metrics,
+        achievements: cat.keyAchievements || [],
+        githubUrl: cat.githubUrl,
+        liveUrl: cat.liveUrl,
+        demoNote: cat.demoNote
+      };
+    }
+
+    const PROJECTS = Object.values(PROJECT_CATALOG).map(p => transformProject(p.slug, p));
 
     const grid = document.getElementById('pe-grid');
     const search = document.getElementById('pe-search');
@@ -727,16 +594,6 @@
 
     let activeFilter = '';
     let activeQuery = '';
-
-    function escapeHtml(str) {
-      if (!str) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#x27;');
-    }
 
     function renderProjects() {
       const filtered = PROJECTS.filter(p => {
@@ -824,7 +681,7 @@
         : '';
 
       overlay.innerHTML = `
-        <div class="pe-modal" role="dialog" aria-modal="true" aria-label="${escapeHtml(project.name)} details">
+        <div class="pe-modal" role="dialog" aria-label="${escapeHtml(project.name)} details">
           <button class="pe-modal-close" aria-label="Close modal">✕</button>
           <div class="pe-modal-header">
             <div class="pe-modal-name">📦 ${escapeHtml(project.name)}</div>
@@ -880,17 +737,7 @@
       renderProjects();
     });
 
-    // Online status indicator
-    function updateOnlineStatus(online) {
-      const el = document.getElementById('online-status');
-      if (!el) return;
-      el.innerHTML = `<span class="status-dot"></span> ${online ? 'Online' : 'Offline'}`;
-      el.className = `status-indicator ${online ? 'online' : 'offline'}`;
-    }
-
-    updateOnlineStatus(navigator.onLine);
-    window.addEventListener('online', () => updateOnlineStatus(true));
-    window.addEventListener('offline', () => updateOnlineStatus(false));
+    // Online status handled by pwa.js globally
 
     // Theme persistence
     if (localStorage.getItem('portfolio-theme') === 'retro') {
