@@ -112,7 +112,7 @@ class MeshWatchAPI {
         players: 3,
         uptime: '99.8%',
         discordAlertsToday: 0,
-        lastGcPause: '45ms'
+        gcPause: null
       };
     }
 
@@ -141,7 +141,7 @@ class MeshWatchAPI {
         players: 3,
         uptime: '99.8%',
         discordAlertsToday: 0,
-        lastGcPause: '45ms'
+        gcPause: null
       };
     }
   }

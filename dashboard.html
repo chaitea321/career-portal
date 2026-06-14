@@ -488,7 +488,7 @@
 
     const MINECRAFT_DEFAULTS = {
       server: { name: "Eugene's Homelab MC", version: "PaperMC 26.1.2", javaVersion: "Java 25" },
-      metrics: { tps: 20, players: 3, maxPlayers: 20, uptime: "99.8%", lastGcPause: "45ms", heapUsedMB: 300, heapMaxMB: 512 },
+      metrics: { tps: 20, players: 3, maxPlayers: 20, uptime: "99.8%", heapUsedMB: 300, heapMaxMB: 512 },
       monitoring: { discordAlertsToday: 0, rconLatency: "12ms" },
       recentChanges: [
         "Upgraded to PaperMC 26.1.2 with Java 25 runtime",
@@ -541,11 +541,6 @@
             <div class="db-gauge-label">Heap Usage</div>
             <div class="db-gauge"><div class="db-gauge-fill" style="width:${heapPct}%"></div></div>
             <div class="db-gauge-value">${stats.metrics.heapUsedMB}<span class="db-gauge-sub">/${stats.metrics.heapMaxMB} MB</span></div>
-          </div>
-          <div class="db-gauge-group">
-            <div class="db-gauge-label">Last GC Pause</div>
-            <div class="db-gauge"><div class="db-gauge-fill" style="width:${Math.min(100, parseInt(stats.metrics.lastGcPause))}%"></div></div>
-            <div class="db-gauge-value">${stats.metrics.lastGcPause}</div>
           </div>
         </div>
         <div class="db-server-meta" style="grid-column:1/-1;margin-top:0.5rem;">

@@ -26,7 +26,7 @@
       "serverVersion": "PaperMC 26.1.2",
       "javaVersion": "Java 25",
       "uptime": "99.8%",
-      "lastGcPause": "45ms",
+      "lastGcPause": null,
       "heapUsedMB": 256,
       "heapMaxMB": 512,
       "discordAlertsToday": 0,

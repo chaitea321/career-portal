@@ -56,7 +56,7 @@ const PROJECT_CATALOG = {
       playersTracked: true,
       discordAlertsToday: 0,
       uptime: '99.8%',
-      lastGcPause: '45ms'
+      
     },
     badges: ['⭐ Live', '🎮 Discord Bot', '📊 Real-time'],
     githubUrl: 'https://github.com/chaitea321/minecraft-monitoring',

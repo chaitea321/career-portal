@@ -1046,7 +1046,7 @@ Generated from chai-homelab.com portfolio terminal`;
         this.log(`Server: ${stats.server.name} (${stats.server.version})`, 'success');
         this.log(`Runtime: ${stats.server.javaVersion}`, 'info');
         this.log(`TPS: ${stats.metrics.tps} | Players: ${stats.metrics.players}/${stats.metrics.maxPlayers}`, 'info');
-        this.log(`Uptime: ${stats.metrics.uptime} | Last GC Pause: ${stats.metrics.lastGcPause}`, 'success');
+        this.log(`Uptime: ${stats.metrics.uptime}`, 'success');
         this.log(`Discord Alerts Today: ${stats.monitoring.discordAlertsToday} | RCON Latency: ${stats.monitoring.rconLatency}`, 'info');
         this.log(`Heap: ${stats.metrics.heapUsedMB}MB / ${stats.metrics.heapMaxMB}MB`, 'info');
         if (stats.recentChanges && stats.recentChanges.length > 0) {
@@ -1070,7 +1070,7 @@ Generated from chai-homelab.com portfolio terminal`;
     if (typeof document === 'undefined' || !this.output) return;
     this.log('Server: Minecraft PaperMC 26.1.2 (Java 25)', 'success');
     this.log('TPS: 20 | Players: 3', 'info');
-    this.log('Uptime: 99.8% | Last GC Pause: 45ms', 'info');
+    this.log('Uptime: 99.8%', 'info');
     this.log('Discord Alerts Today: 0', 'info');
     this.log('\nTech Stack:', 'success');
     this.log('  \u2022 JMX Exporter - TPS, Heap, GC Metrics', 'info');

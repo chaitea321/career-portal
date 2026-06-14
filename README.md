@@ -6,7 +6,7 @@ Terminal-themed portfolio with synthwave aesthetic, PWA support, and career fair
 
 ```bash
 npm run dev        # serve on :3000
-npm test           # run full suite (115 tests)
+npm test           # run full suite (123 tests)
 npm run lint       # ESLint check
 npm run build      # lint + test, copy to ../dist/
 ```
@@ -32,7 +32,7 @@ Cloudflare Pages (auto-deploy on push to master)
 |------|-----|-------------|
 | Terminal | `/` | Main terminal UI with 28 commands |
 | Project Explorer | `/project-explorer.html` | Card grid with category filters and search |
-| Dashboard | `/dashboard.html` | Live metrics gauges (Minecraft TPS, heap, GC) |
+| Dashboard | `/dashboard.html` | Live metrics gauges (Minecraft TPS, players, heap) |
 | Writeups | `/writeups.html` | Technical articles with tag filtering |
 | Contact | `/contact.html` | Email form (posts to Azure Function, falls back to mailto:) |
 | Offline | `/offline.html` | PWA fallback page |
@@ -105,7 +105,7 @@ Cloudflare Pages (auto-deploy on push to master)
 ## Config Files
 
 - `config/career-fair.json` — demo mode settings, AI assistant config, mock data
-- `config/minecraft-stats.json` — updated every 10 min by cron job
+- `config/minecraft-stats.json` — updated every 10 min by cron (real Prometheus API)
 - `_headers` — Cloudflare Pages cache headers (31536000s static assets, 600s config)
 
 ## Gotchas
@@ -116,13 +116,13 @@ Cloudflare Pages (auto-deploy on push to master)
 - **`terminal.js` self-instantiates** — `new Terminal()` runs on import. Test files get a live instance.
 - **Theme persists via localStorage** — terminal saves `portfolio-theme`; other pages read it on load.
 - **`COMMAND_COUNT`** is derived from `Object.keys(COMMAND_ICONS).length`. Do not hardcode elsewhere.
-- **Service worker cache name** is `career-portal-v6`. New assets must be added to `ASSETS_TO_CACHE`.
+- **Service worker cache name** is `career-portal-v7`. New assets must be added to `ASSETS_TO_CACHE`.
 - **Google Fonts URL** uses `css2?family=` path (not `css?family=`).
 
 ## Testing
 
 ```bash
-npm test                    # run all (115 tests)
+npm test                    # run all (123 tests)
 node --test tests/terminal.mjs   # single file
 ```
 
