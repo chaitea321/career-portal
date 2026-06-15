@@ -1110,11 +1110,11 @@
       if (!three.disabled) {
         const { scene } = three.init();
 
-        const grid = createGrid({ opacity: 0.25, time: 0 });
+        const grid = createGrid({ opacity: 0.25, time: 0, isMobile: three.isMobile });
         scene.add(grid.object);
         three.addComponent(grid);
 
-        const shapes = createShapes({ count: 4, gpuTier: three.gpuTier, time: 0 });
+        const shapes = createShapes({ count: 4, gpuTier: three.gpuTier, time: 0, isMobile: three.isMobile });
         for (const s of shapes.components) {
           scene.add(s.object);
         }
@@ -1124,7 +1124,8 @@
         const interaction = createInteraction({
           interactiveObjects: interactiveMeshes,
           hoverScale: 1.4,
-          time: 0
+          time: 0,
+          isMobile: three.isMobile
         });
         three.addComponent(interaction);
 

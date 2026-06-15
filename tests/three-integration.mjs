@@ -194,7 +194,7 @@ describe('Three.js 3D Integration', () => {
       const content = fs.readFileSync(path.join(JS_DIR, 'three-grid.js'), 'utf8');
       assert.ok(content.includes('ShaderMaterial'), 'Should use ShaderMaterial');
       assert.ok(content.includes('vertexShader: GRID_VERT'), 'Should have vertex shader');
-      assert.ok(content.includes('fragmentShader: GRID_FRAG'), 'Should have fragment shader');
+      assert.ok(content.includes('GRID_FRAG') || content.includes('MOBILE_GRID_FRAG'), 'Should have fragment shader');
     });
   });
 

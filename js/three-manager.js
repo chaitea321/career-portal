@@ -1,5 +1,6 @@
 // Three.js Scene Manager — Core lifecycle, WebGL detection, auto-detect
 // Handles renderer, camera, scene composition, render loop coordination
+// Mobile-optimized: lowers quality on mobile but still renders
 
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 
@@ -14,6 +15,7 @@ class ThreeManager {
       ...options
     };
     this.disabled = false;
+    this.isMobile = false;
     this.gpuTier = 1;
     this.disableAnimations = false;
     this.components = [];
@@ -34,10 +36,8 @@ class ThreeManager {
       return;
     }
 
-    if (window.innerWidth < 1024) {
-      this.disabled = true;
-      return;
-    }
+    // Detect mobile — don't disable, just tune quality
+    this.isMobile = window.innerWidth < 1024;
 
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     if (prefersReducedMotion.matches) {
@@ -53,12 +53,27 @@ class ThreeManager {
 
     const pxRatio = window.devicePixelRatio || 1;
     const maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
-    if (pxRatio >= 2 && maxTextureSize >= 4096) {
+
+    // Mobile: lower GPU tier, even on capable hardware
+    if (this.isMobile) {
+      this.gpuTier = pxRatio >= 2 && maxTextureSize >= 4096 ? 1 : 0;
+      // Also reduce pixel ratio on mobile to save GPU
+      this.options.pixelRatio = Math.min(this.options.pixelRatio, pxRatio > 2 ? 1.5 : 1);
+      // Disable antialiasing on mobile for performance
+      this.options.antialias = false;
+    } else if (pxRatio >= 2 && maxTextureSize >= 4096) {
       this.gpuTier = 2;
     }
 
     const ua = navigator.userAgent.toLowerCase();
-    if (/android/.test(ua) && pxRatio < 1.5 && maxTextureSize < 2048) {
+    // Only disable on very low-end Android devices
+    if (this.isMobile && /android/.test(ua) && pxRatio < 1.5 && maxTextureSize < 2048) {
+      this.disabled = true;
+      return;
+    }
+
+    // Also disable on very small screens (under 360px) — too cramped for 3D
+    if (window.innerWidth < 360) {
       this.disabled = true;
       return;
     }
@@ -83,7 +98,12 @@ class ThreeManager {
       powerPreference: 'low-power'
     });
     this.renderer.setSize(width, height);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, this.options.pixelRatio));
+
+    // On mobile, cap pixel ratio to save GPU
+    const targetPR = this.options.pixelRatio;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, targetPR));
+
+    // On mobile, reduce shadow map quality (if shadows are added later)
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     this.canvas = this.renderer.domElement;
@@ -92,11 +112,17 @@ class ThreeManager {
 
     this.scene = new THREE.Scene();
 
-    const fov = 60;
+    // Slightly wider FOV on mobile for more immersion on small screens
+    const fov = this.isMobile ? 65 : 60;
     const aspect = width / height;
     const near = 0.1;
     const far = 500;
     this.camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+
+    // Adjust camera position for mobile — bring objects closer on small screens
+    if (this.isMobile) {
+      this.camera.position.z = 2;
+    }
 
     document.body.insertBefore(this.canvas, document.body.firstChild);
 
@@ -107,6 +133,10 @@ class ThreeManager {
       this.renderer.setSize(w, h);
       this.camera.aspect = w / h;
       this.camera.updateProjectionMatrix();
+
+      // Re-detect mobile on resize (orientation change)
+      const wasMobile = this.isMobile;
+      this.isMobile = w < 1024;
     };
 
     window.addEventListener('resize', this._onResize);

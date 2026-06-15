@@ -1165,8 +1165,16 @@ body.theme-retro .command-palette {
   pointer-events: auto;
 }
 
-/* Hide 3D canvas on mobile and reduced motion */
+/* Mobile: show canvas but subtler to not distract */
 @media (max-width: 1024px) {
+  .three-canvas {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+}
+
+/* Very small phones: hide canvas entirely — too cramped */
+@media (max-width: 360px) {
   .three-canvas { display: none !important; }
 }
 

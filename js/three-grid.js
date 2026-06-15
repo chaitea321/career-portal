@@ -1,5 +1,6 @@
 // Synthwave Grid Floor — Perspective grid with horizon glow and fade
 // Custom GLSL shader: additive-blended neon lines on dark background
+// Mobile-optimized: simpler shader, smaller size, lower opacity
 
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 
@@ -55,6 +56,44 @@ const GRID_FRAG = `
   }
 `;
 
+// Simplified grid shader for mobile — fewer lines, no glow
+const MOBILE_GRID_FRAG = `
+  precision mediump float;
+
+  uniform float uTime;
+  uniform vec3 uColor1;
+  uniform vec3 uColor2;
+  uniform float uOpacity;
+  varying vec2 vUv;
+
+  float myFract(float x) { return x - floor(x); }
+
+  void main() {
+    float xNorm = vUv.x * 2.0 - 1.0;
+
+    // Fewer horizontal lines on mobile
+    float hLine = abs(myFract(vUv.y * 20.0 + uTime * 0.3) - 0.5);
+    hLine = 1.0 - step(0.015, hLine);
+
+    // Fewer vertical lines
+    float vLine = abs(myFract(xNorm * 10.0) - 0.5);
+    vLine = 1.0 - step(0.01, vLine);
+
+    vec3 lineColor = mix(uColor1, uColor2, vUv.y);
+    float grid = max(hLine, vLine) * lineColor * 0.8;
+
+    // Fade toward horizon
+    float hf = 1.0 - clamp((vUv.y - 0.85) / 0.15, 0.0, 1.0);
+    grid *= hf;
+
+    // Side fade
+    float sf = 1.0 - clamp((abs(xNorm) - 0.45) / 0.1, 0.0, 1.0);
+    grid *= sf;
+
+    gl_FragColor = vec4(grid, uOpacity * 0.6 * hf * sf);
+  }
+`;
+
 function createGrid(options = {}) {
   const {
     color1 = [1.0, 0.0, 1.0],
@@ -62,30 +101,43 @@ function createGrid(options = {}) {
     glowColor = [1.0, 0.0, 0.98],
     opacity = 0.4,
     size = { width: 300, height: 250 },
-    time = 0
+    time = 0,
+    isMobile = false
   } = options;
 
   const uniforms = {
     uTime: { value: time },
     uColor1: { value: new THREE.Vector3(...color1) },
     uColor2: { value: new THREE.Vector3(...color2) },
-    uGlowColor: { value: new THREE.Vector3(...glowColor) },
-    uOpacity: { value: opacity }
+    uOpacity: { value: isMobile ? opacity * 0.6 : opacity }
   };
+
+  // Add glow uniform only for desktop version
+  if (!isMobile) {
+    uniforms.uGlowColor = { value: new THREE.Vector3(...glowColor) };
+  }
 
   const material = new THREE.ShaderMaterial({
     vertexShader: GRID_VERT,
-    fragmentShader: GRID_FRAG,
+    fragmentShader: isMobile ? MOBILE_GRID_FRAG : GRID_FRAG,
     uniforms,
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending
   });
 
-  const geometry = new THREE.PlaneGeometry(size.width, size.height);
+  // Smaller grid on mobile
+  const mobileSize = isMobile ? { width: size.width * 0.5, height: size.height * 0.5 } : size;
+  const geometry = new THREE.PlaneGeometry(mobileSize.width, mobileSize.height);
   const mesh = new THREE.Mesh(geometry, material);
   mesh.rotation.x = -Math.PI / 2;
-  mesh.position.set(0, -3, 50);
+
+  // Position closer on mobile so it fills the screen better
+  if (isMobile) {
+    mesh.position.set(0, -4, 15);
+  } else {
+    mesh.position.set(0, -3, 50);
+  }
   mesh.renderOrder = -1;
 
   return {

@@ -177,12 +177,12 @@
       if (!three.disabled) {
         const { scene, animate } = three.init();
 
-        const grid = createGrid({ opacity: 0.35, time: 0 });
+        const grid = createGrid({ opacity: 0.35, time: 0, isMobile: three.isMobile });
         scene.add(grid.object);
         three.addComponent(grid);
 
-        const particleCount = three.gpuTier >= 2 ? 400 : 200;
-        const particles = createParticles({ count: particleCount, speed: 0.3, time: 0 });
+        const particleCount = three.gpuTier >= 2 ? 400 : three.isMobile ? 80 : 200;
+        const particles = createParticles({ count: particleCount, speed: 0.3, time: 0, isMobile: three.isMobile });
         scene.add(particles.object);
         three.addComponent(particles);
 

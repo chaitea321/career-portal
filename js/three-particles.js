@@ -1,5 +1,6 @@
 // Neon Particle System — GPU-accelerated via BufferGeometry + Points
 // Particles drift in sine-wave patterns with configurable count by GPU tier
+// Mobile-optimized: simpler shaders, smaller spread, lower count
 
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 
@@ -57,6 +58,42 @@ const PARTICLE_FRAG = `
   }
 `;
 
+// Simplified particle shader for mobile — smaller point size, no smooth glow
+const MOBILE_PARTICLE_VERT = `
+  attribute vec3 aPosition;
+  attribute vec3 aColor;
+  attribute float aSize;
+
+  uniform float uTime;
+
+  varying vec3 vColor;
+
+  void main() {
+    vColor = aColor;
+
+    // Static positions on mobile — no drift calculation for performance
+    vec3 pos = aPosition;
+
+    vec4 viewPos = viewMatrix * modelMatrix * vec4(pos, 1.0);
+    gl_Position = projectionMatrix * viewPos;
+    gl_PointSize = clamp(aSize * (200.0 / -viewPos.z), 1.0, 12.0);
+  }
+`;
+
+const MOBILE_PARTICLE_FRAG = `
+  precision mediump float;
+
+  varying vec3 vColor;
+
+  void main() {
+    // Simple circle — no smoothstep glow
+    float dist = length(gl_PointCoord - 0.5);
+    if (dist > 0.5) discard;
+    float alpha = 1.0 - dist * 2.0;
+    gl_FragColor = vec4(vColor, alpha * 0.6);
+  }
+`;
+
 function createParticles(options = {}) {
   const {
     count = 200,
@@ -67,8 +104,17 @@ function createParticles(options = {}) {
     ],
     speed = 0.5,
     spread = { x: 60, y: 15, z: 80 },
-    time = 0
+    time = 0,
+    isMobile = false
   } = options;
+
+  // Smaller spread on mobile so particles stay visible on small screens
+  const mobileSpread = {
+    x: spread.x * 0.5,
+    y: spread.y * 0.6,
+    z: spread.z * 0.5
+  };
+  const activeSpread = isMobile ? mobileSpread : spread;
 
   const positions = new Float32Array(count * 3);
   const particleColors = new Float32Array(count * 3);
@@ -76,16 +122,17 @@ function createParticles(options = {}) {
   const phases = new Float32Array(count);
 
   for (let i = 0; i < count; i++) {
-    positions[i * 3] = (Math.random() - 0.5) * spread.x;
-    positions[i * 3 + 1] = Math.random() * spread.y - 2;
-    positions[i * 3 + 2] = (Math.random() - 0.5) * spread.z - 20;
+    positions[i * 3] = (Math.random() - 0.5) * activeSpread.x;
+    positions[i * 3 + 1] = Math.random() * activeSpread.y - 2;
+    positions[i * 3 + 2] = (Math.random() - 0.5) * activeSpread.z - 20;
 
     const colorIdx = Math.floor(Math.random() * colors.length);
     particleColors[i * 3] = colors[colorIdx][0];
     particleColors[i * 3 + 1] = colors[colorIdx][1];
     particleColors[i * 3 + 2] = colors[colorIdx][2];
 
-    sizes[i] = 2.0 + Math.random() * 4.0;
+    // Smaller particle size on mobile
+    sizes[i] = isMobile ? 1.5 + Math.random() * 2.0 : 2.0 + Math.random() * 4.0;
     phases[i] = Math.random() * Math.PI * 2;
   }
 
@@ -93,16 +140,19 @@ function createParticles(options = {}) {
   geometry.setAttribute('aPosition', new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute('aColor', new THREE.BufferAttribute(particleColors, 3));
   geometry.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1));
-  geometry.setAttribute('aPhase', new THREE.BufferAttribute(phases, 1));
+
+  if (!isMobile) {
+    geometry.setAttribute('aPhase', new THREE.BufferAttribute(phases, 1));
+  }
 
   const uniforms = {
     uTime: { value: time },
-    uSpeed: { value: speed }
+    ...(!isMobile ? { uSpeed: { value: speed } } : {})
   };
 
   const material = new THREE.ShaderMaterial({
-    vertexShader: PARTICLE_VERT,
-    fragmentShader: PARTICLE_FRAG,
+    vertexShader: isMobile ? MOBILE_PARTICLE_VERT : PARTICLE_VERT,
+    fragmentShader: isMobile ? MOBILE_PARTICLE_FRAG : PARTICLE_FRAG,
     uniforms,
     transparent: true,
     depthWrite: false,

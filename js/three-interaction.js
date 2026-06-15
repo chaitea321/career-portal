@@ -154,12 +154,14 @@ function createInteraction(options = {}) {
     name: 'interaction',
     uniforms,
     frame(delta) {
+      if (options.isMobile) return;
       uniforms.uTime.value += delta;
       updatePulse();
     },
     animate() {},
     init(manager) {
       if (!manager) return;
+      if (options.isMobile) return;
       camera = manager.camera;
       canvas = manager.canvas;
 
