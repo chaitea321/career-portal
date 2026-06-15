@@ -436,7 +436,12 @@
       <div class="terminal-body" style="flex:1;display:flex;flex-direction:column;">
         <div class="db-wrapper" id="db-content">
           <div class="db-header">
-            <h2>📊 <span>Live Dashboard</span></h2>
+            <h2>📊 <span>Dashboard</span></h2>
+            <div style="font-size:0.65rem;color:var(--text-secondary);margin-top:0.25rem;">
+              <span style="color:var(--success);">●</span> Minecraft stats: live (Prometheus, 10m refresh)
+              <span style="margin-left:0.75rem;">|</span>
+              <span style="margin-left:0.25rem;">Cost &amp; infra: static estimates</span>
+            </div>
             <nav class="db-nav">
               <a href="/">⌂ Terminal</a>
               <a href="/project-explorer.html">📂 Projects</a>
@@ -454,7 +459,7 @@
             <div class="db-panel">
               <div class="db-panel-title">
                 <span>🎮 Minecraft Server</span>
-                <span class="badge"><span class="db-live-dot"></span>LIVE</span>
+                <span class="badge" id="db-minecraft-badge">LIVE</span>
               </div>
               <div class="db-server-info" id="db-minecraft"></div>
               <div class="db-changes" id="db-changes"></div>
@@ -579,6 +584,19 @@
       `).join('');
     }
 
+    function getDataFreshness() {
+      // Returns freshness indicator for live data sources
+      const now = new Date();
+      const updated = stats?.lastUpdated ? new Date(stats.lastUpdated) : null;
+      if (updated) {
+        const minutesAgo = Math.round((now - updated) / 60000);
+        if (minutesAgo < 15) return { label: 'Live', color: 'var(--success)', sub: `${minutesAgo}m ago` };
+        if (minutesAgo < 60) return { label: 'Cached', color: 'var(--warning)', sub: `${minutesAgo}m ago` };
+        return { label: 'Stale', color: 'var(--neon-pink)', sub: `${minutesAgo}m ago` };
+      }
+      return { label: 'Offline', color: 'var(--warning)', sub: 'No data source' };
+    }
+
     function renderMinecraft(stats, animate = false) {
       const tps = stats.metrics.tps;
       const players = stats.metrics.players;
@@ -658,11 +676,30 @@
 
       document.getElementById('db-changes').innerHTML = changesHtml;
 
-      // Updated timestamp
+      // Updated timestamp with data source info
       const updated = stats.lastUpdated
         ? new Date(stats.lastUpdated).toLocaleString()
-        : 'Live (auto-refreshing)';
-      document.getElementById('db-updated').textContent = `Last updated: ${updated}`;
+        : 'No data source';
+      document.getElementById('db-updated').innerHTML = `
+        <span>📊 Live data from Prometheus (cron every 10 min)</span>
+        <span style="margin-left:1rem;">Last updated: ${updated}</span>
+      `;
+
+      // Update live badge with freshness indicator
+      const badge = document.getElementById('db-minecraft-badge');
+      if (badge && stats.lastUpdated) {
+        const minutesAgo = Math.round((Date.now() - new Date(stats.lastUpdated).getTime()) / 60000);
+        if (minutesAgo < 15) {
+          badge.innerHTML = '<span class="db-live-dot"></span>LIVE';
+          badge.style.color = 'var(--success)';
+        } else if (minutesAgo < 60) {
+          badge.innerHTML = `CACHED (${minutesAgo}m)`;
+          badge.style.color = 'var(--warning)';
+        } else {
+          badge.innerHTML = `STALE (${minutesAgo}m)`;
+          badge.style.color = 'var(--neon-pink)';
+        }
+      }
     }
 
     function renderCost() {
@@ -693,13 +730,19 @@
     }
 
     function renderSysStatus() {
+      // Determine which Azure Functions are actually deployed
+      const azureFunctionsDeployed = false; // No Azure Functions deployed yet (only portfolio-contact exists)
+      const tailscaleConnected = false; // Would be detected via health check
+      const aiBackend = tailscaleConnected ? 'Live (Ollama)' : 'Not connected';
+      const azureStatus = azureFunctionsDeployed ? 'Deployed' : 'Awaiting deployment';
+
       document.getElementById('db-sys').innerHTML = [
-        { icon: '☁️', value: 'Cloudflare Pages', label: 'Hosting' },
-        { icon: '🔐', value: 'GitHub OAuth', label: 'Authentication (PKCE)' },
-        { icon: '🌐', value: 'Azure Functions', label: 'Serverless Gateway' },
-        { icon: '🤖', value: 'Ollama Phi-3', label: 'AI Backend (Tailscale)' },
+        { icon: '☁️', value: 'Cloudflare Pages', label: 'Hosting (live)' },
+        { icon: '🔐', value: 'GitHub OAuth', label: `Auth (${azureStatus})` },
+        { icon: '🌐', value: 'Azure Functions', label: azureStatus },
+        { icon: '🤖', value: 'Ollama Phi-3', label: aiBackend },
         { icon: '📦', value: '5 Projects', label: 'In Catalog' },
-        { icon: '📊', value: 'Prometheus + Grafana', label: 'Monitoring Stack' },
+        { icon: '📊', value: 'Prometheus + Grafana', label: 'Monitoring (live)' },
         { icon: '⚙️', value: 'GitHub Actions', label: 'CI/CD Pipeline' },
         { icon: '📱', value: 'PWA Ready', label: 'Offline Support' }
       ].map(s => `

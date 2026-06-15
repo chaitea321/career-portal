@@ -1174,9 +1174,9 @@ Generated from chai-homelab.com portfolio terminal`;
           this.log(`  Cost: $${status.monthlyCost || '5.12'}/month (60% savings vs serverless)`, 'success');
           this.log(`  AI Analysis: ${status.aiAnalysis || 'Ollama Phi-3 ready for incident analysis'}`, 'info');
         } else {
-          // Fallback to cached/demo metrics
+          // Fallback to cached/demo metrics — clearly labeled
           this.log('Azure Functions not yet deployed, showing demo data...', 'warning');
-          this.log('MeshWatch: \u2705 Production (demo mode)', 'success');
+          this.log('MeshWatch: \u2705 Production (demo mode — static estimates)', 'success');
           this.log('  Pods deployed: 15 | Services monitored: 5', 'info');
           this.log('  Monthly cost: $5.12 (60% savings vs serverless)', 'success');
           this.log('  AI Analysis: Ollama Phi-3 ready (Tailscale pending)', 'info');
