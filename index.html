@@ -129,18 +129,18 @@
       });
     });
 
-    // Direct focus handler on command input — works reliably on mobile
+    // Focus handler on command input — only activates when tapping the command line area
     const cmdInput = document.getElementById('command-input');
+    const cmdLine = document.querySelector('.command-line');
     if (cmdInput) {
       cmdInput.addEventListener('click', () => cmdInput.focus());
       cmdInput.addEventListener('touchstart', () => cmdInput.focus(), { passive: true });
     }
 
-    // Also handle taps on terminal-body to focus input (wider click target)
-    const body = document.querySelector('.terminal-body');
-    if (body && cmdInput) {
-      body.addEventListener('click', () => cmdInput.focus());
-      body.addEventListener('touchstart', () => cmdInput.focus(), { passive: true });
+    // Only focus on tapping the command-line area, not the whole terminal body
+    if (cmdLine && cmdInput) {
+      cmdLine.addEventListener('click', () => cmdInput.focus());
+      cmdLine.addEventListener('touchstart', () => cmdInput.focus(), { passive: true });
     }
 
     // Theme toggle button

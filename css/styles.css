@@ -89,6 +89,7 @@ body.theme-retro .terminal-output {
 }
 
 .terminal-header {
+  position: relative;
   text-align: center;
   padding: 2rem 1rem;
   border-bottom: 2px solid var(--neon-pink);
@@ -1323,7 +1324,7 @@ body.theme-retro .command-palette {
 .theme-toggle-btn {
   position: absolute;
   top: 0.75rem;
-  right: 0.75rem;
+  right: 4rem;
   background: rgba(188, 19, 254, 0.1);
   border: 1px solid rgba(188, 19, 254, 0.2);
   color: var(--neon-purple);
