@@ -4,7 +4,7 @@ import assert from 'node:assert';
 describe('Phase 2 — Dashboard Smooth Transitions', () => {
   it('dashboard.html contains animate parameter in renderMinecraft', async () => {
     const fs = await import('fs');
-    const html = fs.readFileSync('/home/eugene/career-portal/dashboard.html', 'utf8');
+    const html = fs.readFileSync('./dashboard.html', 'utf8');
 
     // renderMinecraft should accept an animate parameter
     assert.ok(
@@ -21,7 +21,7 @@ describe('Phase 2 — Dashboard Smooth Transitions', () => {
 
   it('dashboard.html uses direct gauge element updates for transitions', async () => {
     const fs = await import('fs');
-    const html = fs.readFileSync('/home/eugene/career-portal/dashboard.html', 'utf8');
+    const html = fs.readFileSync('./dashboard.html', 'utf8');
 
     // Should query existing gauge-fill elements for animation
     assert.ok(
@@ -32,7 +32,7 @@ describe('Phase 2 — Dashboard Smooth Transitions', () => {
 
   it('dashboard.html has CSS transition on gauge-fill', async () => {
     const fs = await import('fs');
-    const html = fs.readFileSync('/home/eugene/career-portal/dashboard.html', 'utf8');
+    const html = fs.readFileSync('./dashboard.html', 'utf8');
 
     assert.ok(
       /transition:\s*width/.test(html),
@@ -44,7 +44,7 @@ describe('Phase 2 — Dashboard Smooth Transitions', () => {
 describe('Phase 2 — Terminal Command History Persistence', () => {
   it('terminal.js has _saveExecutionHistory method', async () => {
     const fs = await import('fs');
-    const content = fs.readFileSync('/home/eugene/career-portal/js/terminal.js', 'utf8');
+    const content = fs.readFileSync('./js/terminal.js', 'utf8');
 
     assert.ok(
       /_saveExecutionHistory/.test(content),
@@ -54,7 +54,7 @@ describe('Phase 2 — Terminal Command History Persistence', () => {
 
   it('terminal.js has _loadCommandHistory method', async () => {
     const fs = await import('fs');
-    const content = fs.readFileSync('/home/eugene/career-portal/js/terminal.js', 'utf8');
+    const content = fs.readFileSync('./js/terminal.js', 'utf8');
 
     assert.ok(
       /_loadCommandHistory/.test(content),
@@ -64,7 +64,7 @@ describe('Phase 2 — Terminal Command History Persistence', () => {
 
   it('terminal.js has _recordCommand method', async () => {
     const fs = await import('fs');
-    const content = fs.readFileSync('/home/eugene/career-portal/js/terminal.js', 'utf8');
+    const content = fs.readFileSync('./js/terminal.js', 'utf8');
 
     assert.ok(
       /_recordCommand/.test(content),
@@ -74,7 +74,7 @@ describe('Phase 2 — Terminal Command History Persistence', () => {
 
   it('terminal.js has _executionHistory array', async () => {
     const fs = await import('fs');
-    const content = fs.readFileSync('/home/eugene/career-portal/js/terminal.js', 'utf8');
+    const content = fs.readFileSync('./js/terminal.js', 'utf8');
 
     assert.ok(
       /_executionHistory/.test(content),
@@ -84,7 +84,7 @@ describe('Phase 2 — Terminal Command History Persistence', () => {
 
   it('executeCommand calls _recordCommand at start', async () => {
     const fs = await import('fs');
-    const content = fs.readFileSync('/home/eugene/career-portal/js/terminal.js', 'utf8');
+    const content = fs.readFileSync('./js/terminal.js', 'utf8');
 
     // Find executeCommand and check _recordCommand is called at the top
     const match = content.match(/executeCommand\(command\)\s*\{[^}]*_recordCommand/);
@@ -96,7 +96,7 @@ describe('Phase 2 — Terminal Command History Persistence', () => {
 
   it('init calls _loadCommandHistory', async () => {
     const fs = await import('fs');
-    const content = fs.readFileSync('/home/eugene/career-portal/js/terminal.js', 'utf8');
+    const content = fs.readFileSync('./js/terminal.js', 'utf8');
 
     // Find init method and check _loadCommandHistory is called
     const initMatch = content.match(/init\(\)\s*\{[^}]*_loadCommandHistory/);
@@ -108,7 +108,7 @@ describe('Phase 2 — Terminal Command History Persistence', () => {
 
   it('saves to terminal-execution-history key in localStorage', async () => {
     const fs = await import('fs');
-    const content = fs.readFileSync('/home/eugene/career-portal/js/terminal.js', 'utf8');
+    const content = fs.readFileSync('./js/terminal.js', 'utf8');
 
     assert.ok(
       /localStorage\.setItem\(['"]terminal-execution-history['"]/.test(content),
@@ -118,7 +118,7 @@ describe('Phase 2 — Terminal Command History Persistence', () => {
 
   it('saves to terminal-command-history key in localStorage', async () => {
     const fs = await import('fs');
-    const content = fs.readFileSync('/home/eugene/career-portal/js/terminal.js', 'utf8');
+    const content = fs.readFileSync('./js/terminal.js', 'utf8');
 
     assert.ok(
       /localStorage\.setItem\(['"]terminal-command-history['"]/.test(content),
@@ -130,7 +130,7 @@ describe('Phase 2 — Terminal Command History Persistence', () => {
 describe('Phase 2 — Help Overlay (?) Shortcut', () => {
   it('terminal.js has showHelpOverlay method', async () => {
     const fs = await import('fs');
-    const content = fs.readFileSync('/home/eugene/career-portal/js/terminal.js', 'utf8');
+    const content = fs.readFileSync('./js/terminal.js', 'utf8');
 
     assert.ok(
       /showHelpOverlay/.test(content),
@@ -140,7 +140,7 @@ describe('Phase 2 — Help Overlay (?) Shortcut', () => {
 
   it('? key triggers showHelpOverlay in bindEvents', async () => {
     const fs = await import('fs');
-    const content = fs.readFileSync('/home/eugene/career-portal/js/terminal.js', 'utf8');
+    const content = fs.readFileSync('./js/terminal.js', 'utf8');
 
     assert.ok(
       /e\.key\s*===\s*['"]\?['"]/.test(content),
@@ -150,7 +150,7 @@ describe('Phase 2 — Help Overlay (?) Shortcut', () => {
 
   it('help overlay has proper ARIA attributes', async () => {
     const fs = await import('fs');
-    const content = fs.readFileSync('/home/eugene/career-portal/js/terminal.js', 'utf8');
+    const content = fs.readFileSync('./js/terminal.js', 'utf8');
 
     assert.ok(
       /role.*dialog/.test(content) && /aria-label.*help/i.test(content),
@@ -160,7 +160,7 @@ describe('Phase 2 — Help Overlay (?) Shortcut', () => {
 
   it('help text includes ? shortcut in showHelp', async () => {
     const fs = await import('fs');
-    const content = fs.readFileSync('/home/eugene/career-portal/js/terminal.js', 'utf8');
+    const content = fs.readFileSync('./js/terminal.js', 'utf8');
 
     // Find showHelp method and check for ? shortcut
     const showHelpMatch = content.match(/showHelp\(\)\s*\{[\s\S]*?['"]\?['"]/);
@@ -172,7 +172,7 @@ describe('Phase 2 — Help Overlay (?) Shortcut', () => {
 
   it('CSS has help-overlay styles', async () => {
     const fs = await import('fs');
-    const css = fs.readFileSync('/home/eugene/career-portal/css/styles.css', 'utf8');
+    const css = fs.readFileSync('./css/styles.css', 'utf8');
 
     assert.ok(
       /\.help-overlay/.test(css),
@@ -186,7 +186,7 @@ describe('Phase 2 — Help Overlay (?) Shortcut', () => {
 
   it('help overlay respects reduced motion', async () => {
     const fs = await import('fs');
-    const css = fs.readFileSync('/home/eugene/career-portal/css/styles.css', 'utf8');
+    const css = fs.readFileSync('./css/styles.css', 'utf8');
 
     assert.ok(
       /@media.*prefers-reduced-motion[\s\S]*\.help-overlay/.test(css),
