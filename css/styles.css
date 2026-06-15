@@ -1471,24 +1471,31 @@ body.theme-retro .bottom-nav-item.active::after {
     display: block;
   }
 
-  /* Add padding to body to account for bottom nav */
-  body {
-    padding-bottom: 72px;
-  }
-
-  /* Hide the old mobile-nav dropdown */
-  .mobile-nav {
+  /* Hide hamburger button - replaced by bottom nav */
+  .ct-hamburger {
     display: none !important;
   }
 
-  /* Hide hamburger button - no longer needed */
-  .ct-hamburger {
+  /* Hide old mobile-nav dropdown */
+  .mobile-nav {
     display: none !important;
   }
 
   /* Footer sits above bottom nav */
   .terminal-footer {
-    padding-bottom: 0.5rem;
+    padding-bottom: calc(72px + 0.5rem);
+  }
+
+  /* Dashboard, project, writeup page footers */
+  .db-footer,
+  .pe-footer,
+  .wp-footer,
+  .ct-footer,
+  .db-wrapper,
+  .pe-wrapper,
+  .wp-wrapper,
+  .ct-wrapper {
+    padding-bottom: calc(72px + 1rem);
   }
 }
 
