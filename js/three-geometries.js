@@ -260,7 +260,7 @@ function createCrystalFormation(options = {}) {
     name: 'crystal', object: group, uniforms: { uTime: { value: time } }, crystals,
     frame(delta) { for (const c of crystals) c.uniforms.uTime.value += delta; },
     animate(delta) {
-      const t = uniforms.uTime.value;
+      const t = this.uniforms.uTime.value;
       for (let i = 0; i < crystals.length; i++) {
         const c = crystals[i];
         c.mesh.rotation.y = c.baseRotation.y + t * (0.1 + i * 0.05);
@@ -339,7 +339,7 @@ function createOrbitalSystem(options = {}) {
     name: 'orbital', object: group, uniforms: { uTime: { value: time } }, orbits, coreUniforms,
     frame(delta) {},
     animate(delta) {
-      const t = uniforms.uTime.value;
+      const t = this.uniforms.uTime.value;
       for (const o of orbits) {
         const angle = t * o.speed + o.phase;
         o.mesh.position.set(
@@ -460,7 +460,7 @@ function createNeuralNetwork(options = {}) {
     name: 'neural', object: group, uniforms: { uTime: { value: time } }, nodes,
     frame(delta) {},
     animate(delta) {
-      const t = uniforms.uTime.value;
+      const t = this.uniforms.uTime.value;
       for (const n of nodes) {
         n.mesh.position.x = n.basePos.x + Math.sin(t * 0.5 + n.basePos.x) * 0.2;
         n.mesh.position.y = n.basePos.y + Math.cos(t * 0.3 + n.basePos.y) * 0.2;
