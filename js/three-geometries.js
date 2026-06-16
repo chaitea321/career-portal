@@ -110,9 +110,9 @@ function createFlowField(options = {}) {
         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
         const force = Math.min(0.3 / (dist * 0.1 + 1), 0.5);
 
-        // Vortex effect near mouse
-        const vortexX = -dy / dist * force * 2;
-        const vortexY = dx / dist * force * 2;
+        // Vortex effect near mouse (dist protected by || 1 above)
+        const vortexX = -dy / (dist || 1) * force * 2;
+        const vortexY = dx / (dist || 1) * force * 2;
 
         // Flow field noise
         const noiseX = Math.sin(t * 0.5 + ox * 0.3) * 0.1;
@@ -476,7 +476,7 @@ function createWaveSurface(options = {}) {
         // Interference pattern
         const wave1 = Math.sin(x * 0.8 + t) * Math.cos(z * 0.6 + t * 0.7);
         const wave2 = Math.sin(x * 0.5 - t * 0.5) * Math.sin(z * 0.8 + t * 0.3);
-        const mouseInfluence = (1.0 - abs(mx)) * (1.0 - abs(my)) * 0.3;
+        const mouseInfluence = (1.0 - Math.abs(mx)) * (1.0 - Math.abs(my)) * 0.3;
         pos[i * 3 + 1] = wave1 * 0.5 + wave2 * 0.3 + mouseInfluence * Math.sin(t + i * 0.1);
       }
       geometry.computeVertexNormals();
