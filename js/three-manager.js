@@ -108,7 +108,8 @@ class ThreeManager {
 
     this.canvas = this.renderer.domElement;
     this.canvas.className = 'three-canvas';
-    this.canvas.style.pointerEvents = 'auto';
+    // Pointer events controlled by CSS (.three-canvas has pointer-events: none by default)
+    // Do NOT set inline pointer-events here — it would override the CSS class rule.
 
     this.scene = new THREE.Scene();
 
