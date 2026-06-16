@@ -1,9 +1,7 @@
 /css/*
-  Cache-Control: public, max-age=86400
   Content-Type: text/css
 
 /js/*
-  Cache-Control: public, max-age=86400
   Content-Type: application/javascript
 
 /icons/*
@@ -11,5 +9,4 @@
   Content-Type: image/png
 
 /config/*
-  Cache-Control: public, max-age=600
   Content-Type: application/json
