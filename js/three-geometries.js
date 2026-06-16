@@ -501,34 +501,114 @@ function createParticleTexture() {
   return texture;
 }
 
+// ─── Terminal Nebula — Interactive particle field (Terminal page) ──────────
+// A dense field of glowing particles that flow toward/around cursor,
+// with color shifts from terminal green to neon pink.
+function createTerminalNebula(options = {}) {
+  const {
+    count = 500, spread = 12, time = 0,
+    isMobile = false, gpuTier = 1
+  } = options;
+  const q = getQuality(isMobile, gpuTier);
+  const particleCount = Math.round(count * q.countScale);
+
+  const geometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(particleCount * 3);
+  const colors = new Float32Array(particleCount * 3);
+  const sizes = new Float32Array(particleCount);
+  const velocities = new Float32Array(particleCount * 3);
+  const originalPos = new Float32Array(particleCount * 3);
+
+  for (let i = 0; i < particleCount; i++) {
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    const r = spread * (0.2 + 0.8 * Math.cbrt(Math.random()));
+    positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+    positions[i * 3 + 1] = r * Math.cos(phi);
+    positions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+    originalPos[i * 3] = positions[i * 3];
+    originalPos[i * 3 + 1] = positions[i * 3 + 1];
+    originalPos[i * 3 + 2] = positions[i * 3 + 2];
+    // Terminal green to neon pink gradient
+    const mix = Math.random();
+    colors[i * 3] = mix * 1.0;
+    colors[i * 3 + 1] = (1 - mix) * 0.94 + mix * 0.0;
+    colors[i * 3 + 2] = mix * 0.98;
+    sizes[i] = 0.05 + Math.random() * 0.1;
+    velocities[i * 3] = (Math.random() - 0.5) * 0.3;
+    velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.3;
+    velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.3;
+  }
+
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+  const texture = createParticleTexture();
+
+  const material = new THREE.PointsMaterial({
+    size: q.simple ? 0.12 : 0.15,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.8,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    map: texture,
+    sizeAttenuation: true
+  });
+
+  const particles = new THREE.Points(geometry, material);
+  const uniforms = { uTime: { value: time } };
+
+  return {
+    name: 'nebula', object: particles, uniforms,
+    originalPos, velocities, particleCount, geometry,
+    frame(delta) {
+      const mx = this.manager ? this.manager.mouse.x : 0;
+      const my = this.manager ? this.manager.mouse.y : 0;
+      const pos = geometry.attributes.position.array;
+      for (let i = 0; i < particleCount; i++) {
+        const i3 = i * 3;
+        // Drift toward cursor in XZ plane
+        const targetX = originalPos[i3] + mx * 2;
+        const targetY = originalPos[i3 + 1] + my * 2;
+        const targetZ = originalPos[i3 + 2];
+        pos[i3] += (targetX - pos[i3]) * delta * 0.5;
+        pos[i3 + 1] += (targetY - pos[i3 + 1]) * delta * 0.5;
+        // Ambient noise
+        pos[i3] += Math.sin(uniforms.uTime.value + i) * delta * 0.05;
+        pos[i3 + 1] += Math.cos(uniforms.uTime.value * 0.7 + i * 1.3) * delta * 0.05;
+        pos[i3 + 2] += Math.sin(uniforms.uTime.value * 0.5 + i * 0.7) * delta * 0.05;
+      }
+      geometry.attributes.position.needsUpdate = true;
+      uniforms.uTime.value += delta;
+      particles.rotation.y += delta * 0.02;
+    },
+    animate() {},
+    init(manager) { this.manager = manager; },
+    dispose() {
+      geometry.dispose();
+      material.dispose();
+      if (texture) texture.dispose();
+    }
+  };
+}
+
 // ─── Page-specific scene builders ────────────────────────────────────────
 function buildTerminalScene(manager) {
   const components = [];
   const gpuTier = manager.gpuTier ?? 1;
   const isMobile = manager.isMobile;
-  const xPad = isMobile ? 8 : 15;
 
   const grid = createGrid({ opacity: 0.3, time: 0, isMobile });
   manager.scene.add(grid.object);
   components.push(grid);
 
-  // Fluid particle field — center stage
-  const flowField = createFlowField({ gridSize: 20, spread: 14, gpuTier, isMobile });
-  flowField.object.position.set(0, 0, -16);
-  manager.scene.add(flowField.object);
-  components.push(flowField);
-
-  // Honeycomb lattice — left (infrastructure cluster)
-  const honeycomb = createHoneycombLattice({ gridSize: 3, spread: 2.5, gpuTier, isMobile });
-  honeycomb.object.position.set(-xPad, -1, -12);
-  manager.scene.add(honeycomb.object);
-  components.push(honeycomb);
-
-  // Data stream — right (data pipeline)
-  const dataStream = createDataStream({ streamCount: 6, spread: 4, gpuTier, isMobile });
-  dataStream.object.position.set(xPad, 0, -14);
-  manager.scene.add(dataStream.object);
-  components.push(dataStream);
+  // Interactive particle nebula — center stage (clean, no artifacts)
+  const nebula = createTerminalNebula({ count: 600, spread: 14, gpuTier, isMobile });
+  nebula.object.position.set(0, 0, -16);
+  manager.scene.add(nebula.object);
+  components.push(nebula);
 
   return { name: 'terminal', components, objects: components.flatMap(c => [c.object]) };
 }
@@ -647,7 +727,7 @@ function buildContactScene(manager) {
 
 export {
   createFlowField, createHoneycombLattice, createDataStream,
-  createPrismMatrix, createWaveSurface,
+  createPrismMatrix, createWaveSurface, createTerminalNebula,
   buildTerminalScene, buildProjectExplorerScene, buildDashboardScene,
   buildWriteupsScene, buildContactScene
 };

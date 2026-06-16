@@ -248,7 +248,7 @@ describe('Three.js 3D Integration', () => {
       const content = fs.readFileSync(path.join(JS_DIR, 'three-geometries.js'), 'utf8');
       const exports = [
         'createFlowField', 'createHoneycombLattice', 'createDataStream',
-        'createPrismMatrix', 'createWaveSurface',
+        'createPrismMatrix', 'createWaveSurface', 'createTerminalNebula',
         'buildTerminalScene', 'buildProjectExplorerScene',
         'buildDashboardScene', 'buildWriteupsScene', 'buildContactScene'
       ];
