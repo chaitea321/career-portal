@@ -15,7 +15,6 @@ const ASSETS_TO_CACHE = [
   '/js/meshwatch-api.js',
   '/js/ai-assistant.js',
   '/js/performance.js',
-  '/js/visual-effects.js',
   '/js/contact-api.js',
   '/js/three-manager.js',
   '/js/three-grid.js',

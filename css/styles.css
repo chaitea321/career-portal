@@ -96,10 +96,6 @@ body.theme-retro .terminal-output {
   background: linear-gradient(180deg, var(--bg-dark), var(--bg-darker));
 }
 
-.terminal-header.neon-pulse .glitch {
-  animation: glitch 3s infinite, neonPulse 4s infinite;
-}
-
 .glitch {
   font-size: 2.5rem;
   font-weight: 700;
@@ -272,29 +268,9 @@ body.theme-retro .terminal-output {
   50% { opacity: 0.7; }
 }
 
-@keyframes matrixRain {
-  0% { transform: translateY(-100%); opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { transform: translateY(100vh); opacity: 0; }
-}
-
 @keyframes cursorBlink {
   0%, 50% { opacity: 1; }
   51%, 100% { opacity: 0; }
-}
-
-.matrix-column {
-  position: fixed;
-  top: -100%;
-  left: var(--x, 0);
-  width: 2px;
-  height: 100%;
-  background: linear-gradient(to bottom, transparent, var(--neon-cyan), transparent);
-  animation: matrixRain var(--duration, 3s) linear infinite;
-  opacity: 0.3;
-  pointer-events: none;
-  z-index: -1;
 }
 
 
@@ -796,7 +772,6 @@ body.theme-retro .terminal-footer {
 
   /* Hide heavy visual effects on mobile for performance */
   #crt-overlay { display: none; }
-  .matrix-column { display: none !important; }
 
   /* Terminal container - full width with safe margins */
   .terminal-container {
@@ -1672,7 +1647,6 @@ body.theme-retro .bottom-nav-item.active::after {
 @media (max-width: 768px) and (prefers-reduced-data: reduce) {
   .three-canvas { display: none !important; }
   #crt-overlay { display: none !important; }
-  .matrix-column { display: none !important; }
   .glitch { animation: none !important; }
   .glitch::before, .glitch::after { display: none; }
 }

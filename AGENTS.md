@@ -30,7 +30,7 @@ Vanilla JS + CSS static site. **No build step** — `npm run build` just copies 
 | `achievements.js` | 10 unlockable badges, localStorage persistence |
 | `audio.js` | Web Audio API keystroke sounds, WAV tone generation |
 | `performance.js` | Navigation Timing API metrics (TTFB, DCL, FullLoad) |
-| `visual-effects.js` | Matrix rain + neon pulse, respects `prefers-reduced-motion` and mobile |
+| `visual-effects.js` | *(removed)* |
 | `service-worker.js` | PWA offline cache (v6), fetch-first strategy with offline.html fallback |
 | `pwa.js` | Service worker registration + online/offline status indicator |
 | `utils/helpers.js` | `escapeHtml`, `normalizeSlug`, `validateUrl`, `COMMAND_ICONS`, `COMMAND_DESCS`, `COMMAND_COUNT`, `SKILLS_DATA`, `PERF_THRESHOLDS`, `gradePerf`, `computeOverallGrade` |

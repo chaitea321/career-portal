@@ -40,7 +40,7 @@ export const COMMAND_ICONS = Object.freeze({
   'skills-visual': '\u{1f4ca}', timeline: '\u{1f5d3}', experience: '\u{1f4bc}',
   education: '\u{1f393}', resume: '\u{1f4c4}', about: '\u{1f464}', contact: '\u{1f4e7}',
   status: '\u{1f504}', minecraft: '\u{1f3ae}', ai: '\u{1f916}', demo: '\u{1f3ac}',
-  clear: '\u274c', theme: '\u{1f3b3}', matrix: '\u25a0', neofetch: '\u{1f5a1}',
+  clear: '\u274c', theme: '\u{1f3b3}', neofetch: '\u{1f5a1}',
   fortune: '\u{1f3ae}', cowsay: '\u{1f42e}', achievements: '\u{1f3af}', perf: '\u2699',
   explorer: '\u{1f4b1}', dashboard: '\u{1f4ca}', writeups: '\u{1f4dd}', git: '\u{1f552}'
 });
@@ -51,7 +51,7 @@ export const COMMAND_DESCS = Object.freeze({
   experience: 'Work experience', education: 'Education background', resume: 'Resume text',
   about: 'About Eugene', contact: 'Contact info', status: 'System metrics',
   minecraft: 'Minecraft server stats', ai: 'AI assistant', demo: 'Auto showcase',
-  clear: 'Clear terminal', theme: 'Toggle theme', matrix: 'Matrix rain',
+  clear: 'Clear terminal', theme: 'Toggle theme',
   neofetch: 'System info display', fortune: 'Random fortune', cowsay: 'ASCII cow',
   achievements: 'Earned badges', perf: 'Performance dashboard',
   explorer: 'Open Project Explorer page', dashboard: 'Open Live Dashboard page', writeups: 'Open Writeups page',

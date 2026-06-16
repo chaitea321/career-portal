@@ -8,16 +8,6 @@ import Achievements from './achievements.js';
 import ContactAPI from './contact-api.js';
 import { escapeHtml, normalizeSlug, validateUrl, COMMAND_ICONS, COMMAND_DESCS, highlightMatch, createPaletteItem, filterCommands, SKILLS_DATA, PERF_THRESHOLDS, gradePerf, computeOverallGrade } from './utils/helpers.js?v=2';
 
-// Lazy import VisualEffects for matrix Easter egg
-let _visualEffects = null;
-function getVisualEffects() {
-  if (!_visualEffects && typeof document !== 'undefined') {
-    // eslint-disable-next-line no-unused-vars
-    import('./visual-effects.js').then(m => { _visualEffects = m.default || m; });
-  }
-  return _visualEffects;
-}
-
 class Terminal {
   constructor() {
     this.output = typeof document !== 'undefined' ? document.getElementById('terminal-output') : null;
@@ -28,7 +18,7 @@ class Terminal {
       'help', 'projects', 'project', 'skills', 'skills-visual',
       'experience', 'education', 'resume', 'about', 'contact',
       'status', 'minecraft', 'ai', 'demo', 'clear', 'theme',
-      'matrix', 'timeline', 'neofetch', 'fortune', 'cowsay',
+      'timeline', 'neofetch', 'fortune', 'cowsay',
       'achievements', 'perf', 'explorer', 'dashboard', 'writeups', 'git'
     ];
     this._executionHistory = [];
@@ -363,9 +353,7 @@ class Terminal {
             this.startDemoMode();
           }
           break;
-        case 'matrix':
-          this.toggleMatrix(args);
-          break;
+
         case 'skills-visual':
           this.showSkillsVisual();
           break;
@@ -436,7 +424,6 @@ case 'writeups':
       { cmd: 'demo [stop]', desc: 'Start/stop auto-cycling project showcase' },
       { cmd: 'clear', desc: 'Clear terminal output' },
       { cmd: 'theme [retro|synthwave]', desc: 'Set or toggle theme (default: toggle)' },
-      { cmd: 'matrix [on|off]', desc: 'Toggle matrix rain animation' },
       { cmd: 'neofetch', desc: 'System information display' },
       { cmd: 'fortune', desc: 'Random tech/career fortune' },
       { cmd: 'cowsay <text>', desc: 'ASCII cow says your text' },
@@ -505,7 +492,6 @@ case 'writeups':
       { cmd: 'demo [stop]', desc: 'Start/stop auto-cycling project showcase' },
       { cmd: 'clear', desc: 'Clear terminal output' },
       { cmd: 'theme [retro|synthwave]', desc: 'Set or toggle theme (default: toggle)' },
-      { cmd: 'matrix [on|off]', desc: 'Toggle matrix rain animation' },
       { cmd: 'neofetch', desc: 'System information display' },
       { cmd: 'fortune', desc: 'Random tech/career fortune' },
       { cmd: 'cowsay <text>', desc: 'ASCII cow says your text' },
@@ -1313,48 +1299,6 @@ Generated from chai-homelab.com portfolio terminal`;
     this.log('', 'default');
   }
 
-  toggleMatrix(arg = '') {
-    if (typeof document === 'undefined') return;
-
-    const matrixColumns = document.querySelectorAll('.matrix-column');
-
-    if (arg === 'on') {
-      // Enable matrix rain by setting columns to visible
-      matrixColumns.forEach(col => col.style.display = '');
-      this.log('\u2705 Matrix rain enabled! (Type "matrix off" to disable)', 'success');
-    } else if (arg === 'off') {
-      // Disable matrix rain by hiding columns
-      matrixColumns.forEach(col => col.style.display = 'none');
-      this.log('\u274c Matrix rain disabled', 'warning');
-    } else {
-      // Toggle based on current state
-      const hasMatrix = matrixColumns.length > 0;
-      if (hasMatrix) {
-        matrixColumns.forEach(col => col.style.display = 'none');
-        this.log('\u274c Matrix rain disabled', 'warning');
-      } else {
-        // Check if matrix columns exist but are hidden, or create fresh ones
-        const allCols = document.querySelectorAll('.matrix-column');
-        if (allCols.length > 0) {
-          allCols.forEach(col => col.style.display = '');
-          this.log('\u2705 Matrix rain enabled! (Type "matrix off" to disable)', 'success');
-        } else {
-          // No columns exist - trigger visual effects to create them
-          if (typeof window !== 'undefined') {
-            import('./visual-effects.js').then(() => {
-              const cols = document.querySelectorAll('.matrix-column');
-              if (cols.length > 0) {
-                this.log('\u2705 Matrix rain enabled! (Type "matrix off" to disable)', 'success');
-              } else {
-                this.log('Matrix columns not found. Visual effects may need to be loaded first.', 'warning');
-              }
-            });
-          }
-        }
-      }
-    }
-  }
-
   clearTerminal() {
     if (!this.output) return;
     while (this.output.firstChild) {
@@ -2023,7 +1967,7 @@ Generated from chai-homelab.com portfolio terminal`;
 
 export default Terminal;
 
-// Self-instantiate the terminal (matches pattern used by audio, performance, visual-effects)
+// Self-instantiate the terminal (matches pattern used by audio, performance)
 if (typeof window !== 'undefined') {
   const term = new Terminal();
   window.terminal = term; // Expose for debugging

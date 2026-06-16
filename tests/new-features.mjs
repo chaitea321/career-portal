@@ -179,7 +179,7 @@ describe('New Features Tests', () => {
         'help', 'projects', 'project', 'skills', 'skills-visual',
         'experience', 'education', 'resume', 'about', 'contact',
         'status', 'minecraft', 'ai', 'demo', 'clear', 'theme',
-        'matrix', 'timeline', 'neofetch', 'fortune', 'cowsay',
+        'timeline', 'neofetch', 'fortune', 'cowsay',
         'achievements', 'perf'
       ];
       expected.forEach(cmd => {

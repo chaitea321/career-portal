@@ -59,7 +59,6 @@ Cloudflare Pages (auto-deploy on push to master)
 | `demo [stop]` | Auto-cycling project showcase |
 | `clear` | Clear terminal |
 | `theme [retro|synthwave]` | Toggle synthwave/retro theme (persists in localStorage) |
-| `matrix [on|off]` | Toggle matrix rain animation |
 | `neofetch` | System info display |
 | `fortune` | Random tech/career fortune |
 | `cowsay <text>` | ASCII cow says your text |
@@ -91,7 +90,7 @@ Cloudflare Pages (auto-deploy on push to master)
 | `achievements.js` | 10 unlockable badges, localStorage persistence |
 | `audio.js` | Web Audio API keystroke sounds |
 | `performance.js` | Navigation Timing API metrics (TTFB, DCL, FullLoad) |
-| `visual-effects.js` | Matrix rain + neon pulse (respects reduced motion and mobile) |
+| `visual-effects.js` | *(removed)* |
 | `service-worker.js` | PWA offline cache, fetch-first strategy |
 | `pwa.js` | Service worker registration + online/offline status |
 | `utils/helpers.js` | `escapeHtml`, `normalizeSlug`, `validateUrl`, `COMMAND_COUNT`, `SKILLS_DATA`, `gradePerf` |
