@@ -10,10 +10,12 @@
   <meta property="og:description" content="Send a message to Eugene Vincent through the portfolio contact form.">
   <meta property="og:image" content="/icons/icon-96.png">
   <link rel="icon" type="image/png" sizes="96x96" href="/icons/icon-96.png">
+  <meta name="theme-color" content="#0a0a14">
   <link rel="stylesheet" href="css/styles.css?v=2">
   <link rel="manifest" href="/manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <script type="application/ld+json">
     {
@@ -264,17 +266,22 @@
             <form id="contact-form" novalidate>
               <div class="ct-form-group">
                 <label class="ct-label" for="ct-name">Your Name *</label>
-                <input type="text" id="ct-name" class="ct-input" placeholder="Jane Doe" autocomplete="name" required aria-required="true">
+                <input type="text" id="ct-name" class="ct-input" placeholder="Jane Doe" autocomplete="name" inputmode="text" required aria-required="true" spellcheck="true">
+              </div>
+
+              <div class="ct-form-group">
+                <label class="ct-label" for="ct-email">Your Email *</label>
+                <input type="email" id="ct-email" class="ct-input" placeholder="jane@example.com" autocomplete="email" inputmode="email" required aria-required="true" spellcheck="false">
               </div>
 
               <div class="ct-form-group">
                 <label class="ct-label" for="ct-subject">Subject *</label>
-                <input type="text" id="ct-subject" class="ct-input" placeholder="Project collaboration" autocomplete="off" required aria-required="true">
+                <input type="text" id="ct-subject" class="ct-input" placeholder="Project collaboration" autocomplete="off" inputmode="text" required aria-required="true" spellcheck="true">
               </div>
 
               <div class="ct-form-group">
                 <label class="ct-label" for="ct-message">Message *</label>
-                <textarea id="ct-message" class="ct-textarea" placeholder="Hi Eugene, I'd like to discuss..." required aria-required="true"></textarea>
+                <textarea id="ct-message" class="ct-textarea" placeholder="Hi Eugene, I'd like to discuss..." required aria-required="true" spellcheck="true"></textarea>
               </div>
 
               <button type="submit" class="ct-submit" id="ct-submit-btn">Send Message</button>
@@ -386,12 +393,19 @@
       e.preventDefault();
 
       const name = document.getElementById('ct-name').value.trim();
+      const email = document.getElementById('ct-email').value.trim();
       const subject = document.getElementById('ct-subject').value.trim();
       const message = document.getElementById('ct-message').value.trim();
 
       // Validate
-      if (!name || !subject || !message) {
+      if (!name || !email || !subject || !message) {
         showStatus('Please fill in all required fields.', 'error');
+        return;
+      }
+
+      // Basic email validation
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showStatus('Please enter a valid email address.', 'error');
         return;
       }
 
@@ -406,7 +420,7 @@
       hideStatus();
 
       try {
-        const result = await contactAPI.submit({ name, subject, message });
+        const result = await contactAPI.submit({ name, email, subject, message });
 
         if (result.success) {
           showStatus(result.message, 'success');

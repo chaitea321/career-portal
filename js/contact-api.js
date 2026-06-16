@@ -7,12 +7,12 @@ class ContactAPI {
   }
 
   // Submit contact form data
-  async submit({ name, subject, message }) {
+  async submit({ name, email, subject, message }) {
     try {
       const res = await fetch(this.apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, subject, message })
+        body: JSON.stringify({ name, email, subject, message })
       });
 
       if (!res.ok) {
@@ -24,15 +24,15 @@ class ContactAPI {
       return { success: true, message: data.message || 'Email sent successfully' };
     } catch (err) {
       // Backend unavailable — fall back to mailto: link
-      return this._fallbackMailto(name, subject, message);
+      return this._fallbackMailto(name, email, subject, message);
     }
   }
 
   // Fallback: open browser mailto: link when API is unreachable
-  _fallbackMailto(name, subject, message) {
+  _fallbackMailto(name, email, subject, message) {
     const to = encodeURIComponent('eugene.vince55@gmail.com');
     const subj = encodeURIComponent(`[Portfolio] ${subject} — from ${name}`);
-    const body = encodeURIComponent(`Hi Eugene,\n\nFrom: ${name}\nSubject: ${subject}\n\n${message}`);
+    const body = encodeURIComponent(`Hi Eugene,\n\nFrom: ${name}\nEmail: ${email}\nSubject: ${subject}\n\n${message}`);
     const mailto = `mailto:${to}?subject=${subj}&body=${body}`;
 
     // Open mailto link in new window (less intrusive than current page)

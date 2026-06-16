@@ -30,14 +30,14 @@ async function main(context, req) {
     return;
   }
 
-  const { name, subject, message } = body;
+  const { name, email, subject, message } = body;
 
   // Validate required fields
-  if (!name || !subject || !message) {
+  if (!name || !email || !subject || !message) {
     context.res.writeHead(400, { 'Content-Type': 'application/json' });
     context.res.end(JSON.stringify({
       error: 'Missing required fields',
-      required: ['name', 'subject', 'message']
+      required: ['name', 'email', 'subject', 'message']
     }));
     return;
   }
@@ -64,7 +64,7 @@ async function main(context, req) {
   // Try to send email via Resend API
   if (resendApiKey) {
     try {
-      await sendViaResend(name, subject, message);
+      await sendViaResend(name, email, subject, message);
       context.res.writeHead(200, { 'Content-Type': 'application/json' });
       context.res.end(JSON.stringify({ success: true, message: 'Email sent successfully' }));
       return;
@@ -78,6 +78,7 @@ async function main(context, req) {
   // In production without Resend, this logs to Azure Functions console
   console.log('[portfolio-contact] Email submission received:');
   console.log('  From: ' + name);
+  console.log('  Email: ' + email);
   console.log('  To: ' + recipientEmail);
   console.log('  Subject: ' + subject);
   console.log('  Message: ' + message.substring(0, 100) + '...');
@@ -94,7 +95,7 @@ async function main(context, req) {
 module.exports = { main };
 
 // Send email via Resend API
-async function sendViaResend(name, subject, message) {
+async function sendViaResend(name, email, subject, message) {
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -105,8 +106,8 @@ async function sendViaResend(name, subject, message) {
       from: 'Portfolio Contact <contact@' + domain + '>',
       to: recipientEmail,
       subject: '[Portfolio] ' + subject + ' — from ' + name,
-      text: 'Hi Eugene,\n\nFrom: ' + name + '\nSubject: ' + subject + '\n\n' + message + '\n\n---\nSent from chai-homelab.com portfolio contact form',
-      replyTo: 'noreply@chai-homelab.com'
+      text: 'Hi Eugene,\n\nFrom: ' + name + '\nEmail: ' + email + '\nSubject: ' + subject + '\n\n' + message + '\n\n---\nSent from chai-homelab.com portfolio contact form',
+      replyTo: email
     })
   });
 
