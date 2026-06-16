@@ -243,6 +243,11 @@ input:focus, textarea:focus, select:focus {
   to { transform: rotate(360deg); }
 }
 
+/* Terminal header fade-in animation (no JS needed) */
+.header-fade-in {
+  animation: fadeIn 1.0s cubic-bezier(0.23, 1, 0.3, 1) both;
+}
+
 .terminal-header {
   position: relative;
   text-align: center;
