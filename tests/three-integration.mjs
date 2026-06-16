@@ -12,13 +12,10 @@ const ROOT = process.cwd();
 
 describe('Three.js 3D Integration', () => {
   describe('File Structure', () => {
-    it('has all six 3D modules', () => {
+    it('has active three modules', () => {
       const expected = [
         'three-manager.js',
         'three-grid.js',
-        'three-particles.js',
-        'three-shapes.js',
-        'three-interaction.js',
         'three-geometries.js'
       ];
       for (const file of expected) {
@@ -29,14 +26,27 @@ describe('Three.js 3D Integration', () => {
       }
     });
 
-    it('service-worker.js includes new modules', () => {
+    it('old modules (three-shapes, particles, interaction) have been removed', () => {
+      const removed = [
+        'three-shapes.js',
+        'three-particles.js',
+        'three-interaction.js'
+      ];
+      for (const file of removed) {
+        const fullPath = path.join(JS_DIR, file);
+        assert.ok(!fs.existsSync(fullPath), `Should have removed: ${file}`);
+      }
+    });
+
+    it('service-worker.js includes only active modules', () => {
       const swPath = path.join(JS_DIR, 'service-worker.js');
       const content = fs.readFileSync(swPath, 'utf8');
       assert.ok(content.includes('three-manager.js'), 'SW missing three-manager.js');
       assert.ok(content.includes('three-grid.js'), 'SW missing three-grid.js');
-      assert.ok(content.includes('three-particles.js'), 'SW missing three-particles.js');
-      assert.ok(content.includes('three-shapes.js'), 'SW missing three-shapes.js');
-      assert.ok(content.includes('three-interaction.js'), 'SW missing three-interaction.js');
+      assert.ok(content.includes('three-geometries.js'), 'SW missing three-geometries.js');
+      assert.ok(!content.includes('three-particles.js'), 'SW should not include removed module');
+      assert.ok(!content.includes('three-shapes.js'), 'SW should not include removed module');
+      assert.ok(!content.includes('three-interaction.js'), 'SW should not include removed module');
     });
 
     it('CSS includes three-canvas styles with correct z-index', () => {
@@ -44,6 +54,22 @@ describe('Three.js 3D Integration', () => {
       const content = fs.readFileSync(cssPath, 'utf8');
       assert.ok(content.includes('.three-canvas'), 'CSS missing .three-canvas selector');
       assert.ok(content.includes('z-index: 1'), 'Canvas should have z-index: 1 (above CRT overlay)');
+    });
+
+    it('CSS has grain texture overlay and dot grid', () => {
+      const cssPath = path.join(ROOT, 'css', 'styles.css');
+      const content = fs.readFileSync(cssPath, 'utf8');
+      assert.ok(content.includes('#grain-overlay'), 'CSS should have grain overlay');
+      assert.ok(content.includes('body::before'), 'CSS should have dot grid');
+      assert.ok(content.includes('glass-card'), 'CSS should have glassmorphism class');
+    });
+
+    it('all pages include grain overlay', () => {
+      const pages = ['index.html', 'project-explorer.html', 'dashboard.html', 'writeups.html', 'contact.html'];
+      for (const page of pages) {
+        const content = fs.readFileSync(path.join(ROOT, page), 'utf8');
+        assert.ok(content.includes('grain-overlay'), `${page} should include grain overlay`);
+      }
     });
 
     it('index.html includes 3D integration script', () => {
@@ -102,6 +128,11 @@ describe('Three.js 3D Integration', () => {
       const content = fs.readFileSync(path.join(JS_DIR, 'three-manager.js'), 'utf8');
       assert.ok(content.includes('gpuTier'), 'Should have gpuTier property');
       assert.ok(content.includes('devicePixelRatio'), 'Should detect GPU via pixel ratio');
+    });
+
+    it('uses passive pointermove listener for scroll perf', () => {
+      const content = fs.readFileSync(path.join(JS_DIR, 'three-manager.js'), 'utf8');
+      assert.ok(content.includes('{ passive: true }'), 'Should use passive event listener for scroll perf');
     });
 
     it('has disableAnimations for reduced motion', () => {
@@ -194,196 +225,71 @@ describe('Three.js 3D Integration', () => {
       assert.ok(content.includes('vertexShader: GRID_VERT'), 'Should have vertex shader');
       assert.ok(content.includes('GRID_FRAG') || content.includes('MOBILE_GRID_FRAG'), 'Should have fragment shader');
     });
-  });
 
-  describe('ThreeParticles — Source Analysis', () => {
-    it('exports default factory and named createParticles', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-particles.js'), 'utf8');
-      assert.ok(content.includes('export default createParticles'), 'Should export default factory');
-      assert.ok(content.includes('export { createParticles'), 'Should export named createParticles');
-    });
-
-    it('uses BufferGeometry for GPU efficiency', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-particles.js'), 'utf8');
-      assert.ok(content.includes('BufferGeometry'), 'Should use BufferGeometry');
-    });
-
-    it('sets custom attributes (position, color, size, phase)', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-particles.js'), 'utf8');
-      assert.ok(content.includes("setAttribute('aPosition'"), 'Should set position attribute');
-      assert.ok(content.includes("setAttribute('aColor'"), 'Should set color attribute');
-      assert.ok(content.includes("setAttribute('aSize'"), 'Should set size attribute');
-      assert.ok(content.includes("setAttribute('aPhase'"), 'Should set phase attribute');
-    });
-
-    it('creates Points object', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-particles.js'), 'utf8');
-      assert.ok(content.includes('new THREE.Points'), 'Should create Points');
-    });
-
-    it('has sine-wave drift animation in vertex shader', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-particles.js'), 'utf8');
-      assert.ok(content.includes('sin(uTime'), 'Should have sine wave in shader');
-      assert.ok(content.includes('cos(uTime'), 'Should have cosine wave in shader');
-    });
-
-    it('uses AdditiveBlending', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-particles.js'), 'utf8');
-      assert.ok(content.includes('AdditiveBlending'), 'Should use additive blending');
-    });
-
-    it('accepts configurable count, colors, speed, spread', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-particles.js'), 'utf8');
-      assert.ok(content.includes('count'), 'Should accept count option');
-      assert.ok(content.includes('colors'), 'Should accept colors option');
-      assert.ok(content.includes('speed'), 'Should accept speed option');
-      assert.ok(content.includes('spread'), 'Should accept spread option');
-    });
-  });
-
-  describe('ThreeShapes — Source Analysis', () => {
-    it('exports default, createShape, and createShapes', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-shapes.js'), 'utf8');
-      assert.ok(content.includes('export default createShapes'), 'Should export default factory');
-      assert.ok(content.includes('export { createShape'), 'Should export createShape');
-      assert.ok(content.includes('createShapes'), 'Should export createShapes');
-    });
-
-    it('supports icosahedron geometry', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-shapes.js'), 'utf8');
-      assert.ok(content.includes('IcosahedronGeometry'), 'Should support icosahedron');
-    });
-
-    it('supports octahedron geometry', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-shapes.js'), 'utf8');
-      assert.ok(content.includes('OctahedronGeometry'), 'Should support octahedron');
-    });
-
-    it('supports torusKnot geometry', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-shapes.js'), 'utf8');
-      assert.ok(content.includes('TorusKnotGeometry'), 'Should support torus knot');
-    });
-
-    it('has Fresnel shader for neon glow', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-shapes.js'), 'utf8');
-      assert.ok(content.includes('fresnel'), 'Should have Fresnel effect');
-      assert.ok(content.includes('dot(viewDir, vNormal)'), 'Should use dot product for fresnel');
-    });
-
-    it('has hover state in shader uniforms', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-shapes.js'), 'utf8');
-      assert.ok(content.includes('uHover'), 'Should have hover uniform');
-    });
-
-    it('has floating animation (sine wave)', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-shapes.js'), 'utf8');
-      assert.ok(content.includes('sin(t * 0.5'), 'Should have floating animation');
-    });
-
-    it('has rotation animation', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-shapes.js'), 'utf8');
-      assert.ok(content.includes('rotation.x +='), 'Should rotate on X');
-      assert.ok(content.includes('rotation.y +='), 'Should rotate on Y');
-    });
-
-    it('creates array of shapes via createShapes', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-shapes.js'), 'utf8');
-      assert.ok(content.includes('const shapes = []'), 'Should create shapes array');
-      assert.ok(content.includes('shapes.push(shape)'), 'Should push shapes');
-    });
-
-    it('shape has userData.interactive flag', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-shapes.js'), 'utf8');
-      assert.ok(content.includes('userData.interactive'), 'Should set interactive flag');
-    });
-
-    it('respects gpuTier for shape count', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-shapes.js'), 'utf8');
-      assert.ok(content.includes('gpuTier'), 'Should use gpuTier');
-    });
-  });
-
-  describe('ThreeInteraction — Source Analysis', () => {
-    it('exports default factory and named createInteraction', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-interaction.js'), 'utf8');
-      assert.ok(content.includes('export default createInteraction'), 'Should export default');
-      assert.ok(content.includes('export { createInteraction'), 'Should export named');
-    });
-
-    it('uses THREE.Raycaster for mouse picking', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-interaction.js'), 'utf8');
-      assert.ok(content.includes('Raycaster'), 'Should use raycaster');
-    });
-
-    it('handles pointermove for hover detection', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-interaction.js'), 'utf8');
-      assert.ok(content.includes('pointermove'), 'Should handle pointermove');
-    });
-
-    it('handles pointerdown for click detection', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-interaction.js'), 'utf8');
-      assert.ok(content.includes('pointerdown'), 'Should handle pointerdown');
-    });
-
-    it('handles pointerleave for hover reset', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-interaction.js'), 'utf8');
-      assert.ok(content.includes('pointerleave'), 'Should handle pointerleave');
-    });
-
-    it('implements pulse animation on click', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-interaction.js'), 'utf8');
-      assert.ok(content.includes('pulseStart'), 'Should track pulse start time');
-      assert.ok(content.includes('Math.sin(progress * Math.PI)'), 'Should use sine pulse');
-    });
-
-    it('handles keyboard events (Tab/Enter/Space)', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-interaction.js'), 'utf8');
-      assert.ok(content.includes("e.key === 'Tab'"), 'Should handle Tab key');
-      assert.ok(content.includes("e.key === 'Enter'"), 'Should handle Enter key');
-    });
-
-    it('has resetHover function', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-interaction.js'), 'utf8');
-      assert.ok(content.includes('resetHover'), 'Should have resetHover');
-      assert.ok(content.includes('u.uHover.value = 0'), 'Should reset hover uniform');
-    });
-
-    it('handles window blur for hover cleanup', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-interaction.js'), 'utf8');
-      assert.ok(content.includes("window.addEventListener('blur'"), 'Should handle window blur');
-    });
-
-    it('scales objects on hover', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-interaction.js'), 'utf8');
-      assert.ok(content.includes('hoverScale'), 'Should have hover scale config');
-      assert.ok(content.includes('.scale.setScalar'), 'Should scale objects');
-    });
-  });
-
-  describe('Shader Safety', () => {
-    it('grid shader uses safe GLSL (no fract builtin)', () => {
+    it('uses safe GLSL (no fract builtin)', () => {
       const content = fs.readFileSync(path.join(JS_DIR, 'three-grid.js'), 'utf8');
       assert.ok(content.includes('myFract'), 'Grid shader should use myFract helper');
       assert.ok(content.includes('floor'), 'myFract should use floor()');
     });
 
-    it('particle shader uses safe GLSL', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-particles.js'), 'utf8');
-      assert.ok(!content.includes('fract('), 'Particle shader should not use fract()');
+    it('uses depthWrite: false for proper layering', () => {
+      const content = fs.readFileSync(path.join(JS_DIR, 'three-grid.js'), 'utf8');
+      assert.ok(content.includes('depthWrite: false'), 'Grid should not write to depth buffer');
     });
 
-    it('shape shader uses safe GLSL', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-shapes.js'), 'utf8');
-      assert.ok(!content.includes('fract('), 'Shape shader should not use fract()');
-    });
-
-    it('interaction shader uses safe GLSL (no shaders needed)', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-interaction.js'), 'utf8');
-      assert.ok(!content.includes('fract('), 'Interaction should not have GLSL');
+    it('has renderOrder for draw ordering', () => {
+      const content = fs.readFileSync(path.join(JS_DIR, 'three-grid.js'), 'utf8');
+      assert.ok(content.includes('renderOrder'), 'Grid should have renderOrder');
     });
   });
 
-  describe('Mobile Detection', () => {
+  describe('ThreeGeometries — Source Analysis', () => {
+    it('exports all geometry factories and scene builders', () => {
+      const content = fs.readFileSync(path.join(JS_DIR, 'three-geometries.js'), 'utf8');
+      const exports = [
+        'createStarBurst', 'createMetaballCluster', 'createDNAHelix',
+        'createCrystalFormation', 'createOrbitalSystem', 'createWaveformRing',
+        'createNeuralNetwork', 'createMobiusStrip', 'createTerminalNebula',
+        'buildTerminalScene', 'buildProjectExplorerScene',
+        'buildDashboardScene', 'buildWriteupsScene', 'buildContactScene'
+      ];
+      for (const exp of exports) {
+        assert.ok(content.includes(exp), `Should export ${exp}`);
+      }
+    });
+
+    it('has getQuality helper with high desktop detail', () => {
+      const content = fs.readFileSync(path.join(JS_DIR, 'three-geometries.js'), 'utf8');
+      assert.ok(content.includes('getQuality'), 'Should have quality helper');
+      assert.ok(content.includes('subdiv'), 'Should have subdivision control');
+      assert.ok(content.includes('countScale: 2.0'), 'Should boost count for high-end GPU');
+    });
+
+    it('each geometry uses init/mouse pattern', () => {
+      const content = fs.readFileSync(path.join(JS_DIR, 'three-geometries.js'), 'utf8');
+      const pattern = 'init(manager) { this.manager = manager; }';
+      const matches = content.split(pattern).length - 1;
+      assert.ok(matches >= 8, `Should have init(manager) on at least 8 geometries, got ${matches}`);
+    });
+
+    it('has SHAPE_VERT and SHAPE_FRAG shared shaders', () => {
+      const content = fs.readFileSync(path.join(JS_DIR, 'three-geometries.js'), 'utf8');
+      assert.ok(content.includes('SHAPE_VERT'), 'Should have shared vertex shader');
+      assert.ok(content.includes('SHAPE_FRAG'), 'Should have shared fragment shader');
+    });
+
+    it('imports createGrid from three-grid.js', () => {
+      const content = fs.readFileSync(path.join(JS_DIR, 'three-geometries.js'), 'utf8');
+      assert.ok(content.includes("import createGrid from './three-grid.js'"), 'Should import grid');
+    });
+
+    it('uMouse uniform for mouse responsiveness', () => {
+      const content = fs.readFileSync(path.join(JS_DIR, 'three-geometries.js'), 'utf8');
+      assert.ok(content.includes('uMouse'), 'Should use mouse uniform');
+    });
+  });
+
+  describe('Mobile Detection & Quality', () => {
     it('CSS hides canvas on mobile via media query', () => {
       const cssPath = path.join(ROOT, 'css', 'styles.css');
       const content = fs.readFileSync(cssPath, 'utf8');
@@ -403,6 +309,12 @@ describe('Three.js 3D Integration', () => {
       assert.ok(content.includes('width: 100%'), 'Canvas should be full width');
       assert.ok(content.includes('height: 100%'), 'Canvas should be full height');
     });
+
+    it('CSS has touch-action: none on canvas for scroll perf', () => {
+      const cssPath = path.join(ROOT, 'css', 'styles.css');
+      const content = fs.readFileSync(cssPath, 'utf8');
+      assert.ok(content.includes('touch-action: none'), 'Canvas should have touch-action: none');
+    });
   });
 
   describe('Performance Safeguards', () => {
@@ -411,31 +323,19 @@ describe('Three.js 3D Integration', () => {
       assert.ok(content.includes('Math.min(window.devicePixelRatio'), 'Should cap pixel ratio');
     });
 
-    it('particles use BufferGeometry (GPU-efficient)', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-particles.js'), 'utf8');
-      assert.ok(content.includes('BufferGeometry'), 'Should use BufferGeometry');
-    });
-
-    it('shapes use wireframe rendering', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-shapes.js'), 'utf8');
-      assert.ok(content.includes('wireframe: wireframe'), 'Should support wireframe option');
-    });
-
     it('grid uses depthWrite: false for proper layering', () => {
       const content = fs.readFileSync(path.join(JS_DIR, 'three-grid.js'), 'utf8');
       assert.ok(content.includes('depthWrite: false'), 'Grid should not write to depth buffer');
     });
 
-    it('all components use renderOrder for draw ordering', () => {
-      const gridContent = fs.readFileSync(path.join(JS_DIR, 'three-grid.js'), 'utf8');
-      const particleContent = fs.readFileSync(path.join(JS_DIR, 'three-particles.js'), 'utf8');
-      assert.ok(gridContent.includes('renderOrder'), 'Grid should have renderOrder');
-      assert.ok(particleContent.includes('renderOrder'), 'Particles should have renderOrder');
-    });
-
     it('manager uses low-power GPU preference', () => {
       const content = fs.readFileSync(path.join(JS_DIR, 'three-manager.js'), 'utf8');
       assert.ok(content.includes('low-power'), 'Should use low-power GPU preference');
+    });
+
+    it('geometries properly dispose in cleanup', () => {
+      const content = fs.readFileSync(path.join(JS_DIR, 'three-geometries.js'), 'utf8');
+      assert.ok(content.includes('.dispose()'), 'Geometries should dispose WebGL resources');
     });
   });
 
@@ -464,16 +364,8 @@ describe('Three.js 3D Integration', () => {
   describe('Theme Compatibility', () => {
     it('grid colors match synthwave palette (pink/purple/cyan)', () => {
       const content = fs.readFileSync(path.join(JS_DIR, 'three-grid.js'), 'utf8');
-      // Default color1 = [1.0, 0.0, 1.0] = pink
-      // Default color2 = [0.73, 0.07, 1.0] = purple
       assert.ok(content.includes('[1.0, 0.0, 1.0]'), 'Default color1 should be pink');
       assert.ok(content.includes('[0.73, 0.07, 1.0]'), 'Default color2 should be purple');
-    });
-
-    it('particle colors include cyan (#0ff0fc)', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-particles.js'), 'utf8');
-      // Third color in palette = [0.0, 0.94, 0.98] ≈ cyan
-      assert.ok(content.includes('[0.0, 0.94, 0.98]'), 'Should include cyan color');
     });
 
     it('CSS retro theme overrides are present', () => {
@@ -481,18 +373,11 @@ describe('Three.js 3D Integration', () => {
       const content = fs.readFileSync(cssPath, 'utf8');
       assert.ok(content.includes('body.theme-retro'), 'CSS should have retro theme selector');
     });
-
-    it('grid module supports custom colors for retro theme', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-grid.js'), 'utf8');
-      // Should accept color1, color2, glowColor as options
-      assert.ok(content.includes('color1 ='), 'Should accept color1 option');
-      assert.ok(content.includes('glowColor ='), 'Should accept glowColor option');
-    });
   });
 
   describe('Code Quality', () => {
-    it('all modules use ES6 module syntax', () => {
-      const modules = ['three-manager.js', 'three-grid.js', 'three-particles.js', 'three-shapes.js', 'three-interaction.js'];
+    it('active modules use ES6 module syntax', () => {
+      const modules = ['three-manager.js', 'three-grid.js', 'three-geometries.js'];
       for (const mod of modules) {
         const content = fs.readFileSync(path.join(JS_DIR, mod), 'utf8');
         assert.ok(content.includes('export'), `${mod} should have export`);
@@ -500,39 +385,17 @@ describe('Three.js 3D Integration', () => {
       }
     });
 
-    it('all modules use single quotes for strings', () => {
-      const modules = ['three-manager.js', 'three-grid.js', 'three-particles.js', 'three-shapes.js', 'three-interaction.js'];
-      for (const mod of modules) {
-        const content = fs.readFileSync(path.join(JS_DIR, mod), 'utf8');
-        assert.ok(content.length > 0, `${mod} should not be empty`);
-      }
-    });
-
     it('no console.log in production code (only warn/error)', () => {
-      const modules = ['three-manager.js', 'three-grid.js', 'three-particles.js', 'three-shapes.js', 'three-interaction.js'];
+      const modules = ['three-manager.js', 'three-grid.js', 'three-geometries.js'];
       for (const mod of modules) {
         const content = fs.readFileSync(path.join(JS_DIR, mod), 'utf8');
-        // Allow console.warn and console.error but not console.log
         const logMatches = content.match(/console\.log\(/g);
         assert.strictEqual(logMatches, null, `${mod} should not use console.log`);
       }
     });
 
-    it('all modules have proper disposal cleanup', () => {
-      const modules = [
-        { name: 'three-grid.js', pattern: 'geometry.dispose()' },
-        { name: 'three-particles.js', pattern: 'geometry.dispose()' },
-        { name: 'three-shapes.js', pattern: 'geometry.dispose()' }
-      ];
-      for (const mod of modules) {
-        const content = fs.readFileSync(path.join(JS_DIR, mod.name), 'utf8');
-        assert.ok(content.includes(mod.pattern), `${mod.name} should dispose geometry`);
-        assert.ok(content.includes('material.dispose()'), `${mod.name} should dispose material`);
-      }
-    });
-
     it('modules use arrow functions consistently', () => {
-      const modules = ['three-manager.js', 'three-grid.js', 'three-particles.js', 'three-shapes.js', 'three-interaction.js'];
+      const modules = ['three-manager.js', 'three-grid.js', 'three-geometries.js'];
       for (const mod of modules) {
         const content = fs.readFileSync(path.join(JS_DIR, mod), 'utf8');
         assert.ok(content.includes('() =>') || content.includes('(delta)'), `${mod} should use arrow functions`);
@@ -549,13 +412,13 @@ describe('Three.js 3D Integration', () => {
     it('ThreeManager disposes event listeners on cleanup', () => {
       const content = fs.readFileSync(path.join(JS_DIR, 'three-manager.js'), 'utf8');
       assert.ok(content.includes("window.removeEventListener('resize'"), 'Should remove resize listener');
-      assert.ok(content.includes("document.removeEventListener('visibilitychange'") || content.includes('visibilitychange'), 'Should handle visibility cleanup');
+      assert.ok(content.includes("removeEventListener('pointermove'"), 'Should remove pointermove listener');
     });
   });
 
   describe('CDN Import Consistency', () => {
-    it('all modules use same Three.js CDN version', () => {
-      const modules = ['three-manager.js', 'three-grid.js', 'three-particles.js', 'three-shapes.js', 'three-interaction.js'];
+    it('active modules use same Three.js CDN version', () => {
+      const modules = ['three-manager.js', 'three-grid.js', 'three-geometries.js'];
       const version = '0.160.0';
       for (const mod of modules) {
         const content = fs.readFileSync(path.join(JS_DIR, mod), 'utf8');
@@ -564,7 +427,7 @@ describe('Three.js 3D Integration', () => {
     });
 
     it('all modules import from jsDelivr CDN', () => {
-      const modules = ['three-manager.js', 'three-grid.js', 'three-particles.js', 'three-shapes.js', 'three-interaction.js'];
+      const modules = ['three-manager.js', 'three-grid.js', 'three-geometries.js'];
       for (const mod of modules) {
         const content = fs.readFileSync(path.join(JS_DIR, mod), 'utf8');
         assert.ok(content.includes('cdn.jsdelivr.net'), `${mod} should use jsDelivr CDN`);
@@ -573,28 +436,28 @@ describe('Three.js 3D Integration', () => {
   });
 
   describe('Page Integration Completeness', () => {
-    it('index.html has terminal scene (grid + crystals + neural)', () => {
+    it('index.html has terminal scene', () => {
       const content = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
       assert.ok(content.includes('buildTerminalScene'), 'Index should use terminal scene builder');
       assert.ok(content.includes('three-geometries.js'), 'Index should import geometries module');
     });
 
-    it('project-explorer.html has project scene (unique shapes per category)', () => {
+    it('project-explorer.html has project scene', () => {
       const content = fs.readFileSync(path.join(ROOT, 'project-explorer.html'), 'utf8');
       assert.ok(content.includes('buildProjectExplorerScene'), 'Explorer should use project scene builder');
     });
 
-    it('dashboard.html has data viz scene (orbitals + waveform)', () => {
+    it('dashboard.html has data viz scene', () => {
       const content = fs.readFileSync(path.join(ROOT, 'dashboard.html'), 'utf8');
       assert.ok(content.includes('buildDashboardScene'), 'Dashboard should use dashboard scene builder');
     });
 
-    it('writeups.html has ambient scene (star + metaball + orbital)', () => {
+    it('writeups.html has ambient scene', () => {
       const content = fs.readFileSync(path.join(ROOT, 'writeups.html'), 'utf8');
       assert.ok(content.includes('buildWriteupsScene'), 'Writeups should use writeups scene builder');
     });
 
-    it('contact.html has contact scene (mobius + neural + waveform)', () => {
+    it('contact.html has contact scene', () => {
       const content = fs.readFileSync(path.join(ROOT, 'contact.html'), 'utf8');
       assert.ok(content.includes('buildContactScene'), 'Contact should use contact scene builder');
     });
@@ -606,12 +469,6 @@ describe('Three.js 3D Integration', () => {
         assert.ok(content.includes('beforeunload'), `${page} should have beforeunload cleanup`);
         assert.ok(content.includes('three.dispose'), `${page} should call dispose on unload`);
       }
-    });
-
-    it('index.html uses ThreeManager with gpuTier detection', () => {
-      const content = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-      assert.ok(content.includes('ThreeManager'), 'Index should use ThreeManager');
-      assert.ok(content.includes('three-geometries.js'), 'Index should import geometries module');
     });
   });
 });

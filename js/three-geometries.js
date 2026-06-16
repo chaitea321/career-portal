@@ -8,10 +8,10 @@ import createGrid from './three-grid.js';
 
 // ─── Quality helper — unified gpuTier + isMobile control ──────────────────
 function getQuality(isMobile, gpuTier) {
-  if (isMobile) return { simple: true, countScale: 0.5, merged: true };
-  if (gpuTier >= 2) return { simple: false, countScale: 1.0, merged: false };
-  if (gpuTier >= 1) return { simple: false, countScale: 0.75, merged: false };
-  return { simple: true, countScale: 0.5, merged: true };
+  if (isMobile) return { simple: true, countScale: 0.5, merged: true, subdiv: 1 };
+  if (gpuTier >= 2) return { simple: false, countScale: 2.0, merged: false, subdiv: 3 };
+  if (gpuTier >= 1) return { simple: false, countScale: 1.5, merged: false, subdiv: 2 };
+  return { simple: true, countScale: 0.75, merged: true, subdiv: 1 };
 }
 
 // ─── Shared vertex shader — fresnel glow used by most geometries ──────────

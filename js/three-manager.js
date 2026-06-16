@@ -117,7 +117,7 @@ class ThreeManager {
       this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
       this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
     };
-    window.addEventListener('pointermove', this._onPointerMove);
+    window.addEventListener('pointermove', this._onPointerMove, { passive: true });
 
     this.scene = new THREE.Scene();
 

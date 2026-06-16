@@ -88,6 +88,49 @@ body.theme-retro .terminal-output {
   opacity: 0.6;
 }
 
+/* Subtle grain/noise texture — adds organic feel per Reddit "Use Grain Texture to make Site feel Organic" */
+#grain-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* Subtle dot grid background — Brutalist dot grid (Reddit trend) */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  background-image: radial-gradient(circle, rgba(188, 19, 254, 0.08) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Glassmorphism cards — professional card design pattern */
+.glass-card {
+  background: rgba(26, 22, 35, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(188, 19, 254, 0.15);
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.glass-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(188, 19, 254, 0.1);
+  border-color: rgba(188, 19, 254, 0.3);
+}
+
 .terminal-header {
   position: relative;
   text-align: center;
@@ -594,18 +637,23 @@ body.theme-retro .terminal-output {
 
 /* Enhanced project cards with full border and gradient */
 .output-line.project-card {
-  border: 1px solid rgba(188, 19, 254, 0.2);
+  background: rgba(26, 22, 35, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(188, 19, 254, 0.12);
   border-left: 3px solid var(--neon-cyan);
   padding: 1rem 1rem 1rem 1.25rem;
   margin: 0.75rem 0;
-  background: linear-gradient(135deg, rgba(188, 19, 254, 0.05), rgba(0, 255, 65, 0.02));
-  border-radius: 4px;
-  transition: all 0.3s;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .output-line.project-card:hover {
   border-color: var(--neon-cyan);
-  background: linear-gradient(135deg, rgba(188, 19, 254, 0.08), rgba(0, 255, 65, 0.04));
+  background: rgba(26, 22, 35, 0.8);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 0 30px rgba(188, 19, 254, 0.1);
+  transform: translateY(-2px);
 }
 
 /* Enhanced project badges - pill styling */
@@ -1139,6 +1187,7 @@ body.theme-retro .command-palette {
   height: 100%;
   z-index: 1;
   pointer-events: none; /* Don't block clicks on page content below */
+  touch-action: none; /* Prevent browser from waiting for JS on touch input */
   -webkit-transform: translateZ(0); /* Force GPU compositing layer on iOS Safari so z-index works */
 }
 
