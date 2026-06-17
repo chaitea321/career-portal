@@ -765,7 +765,7 @@ class Terminal {
     if (typeof document === 'undefined') return;
 
     const existing = document.getElementById('help-overlay');
-    if (existing) { existing.remove(); return; }
+    if (existing) { existing.remove(); this.input.focus(); return; }
 
     const helpText = [
       { cmd: 'help', desc: 'Show this help message' },
@@ -813,16 +813,16 @@ class Terminal {
       <div class="help-overlay-content">
         <button class="help-overlay-close" aria-label="Close help">&times;</button>
         <h2 class="help-overlay-title">&#x1f507; Help</h2>
+        <div class="help-section help-section--shortcuts">
+          <h3 class="help-section-title">&#x2318; Shortcuts</h3>
+          <ul class="help-shortcut-list">
+            ${shortcuts.map(({ key, desc }) => `<li><kbd>${escapeHtml(key)}</kbd> — ${escapeHtml(desc)}</li>`).join('')}
+          </ul>
+        </div>
         <div class="help-section">
           <h3 class="help-section-title">Commands</h3>
           <ul class="help-command-list">
             ${helpText.map(({ cmd, desc }) => `<li><code>${escapeHtml(cmd)}</code> — ${escapeHtml(desc)}</li>`).join('')}
-          </ul>
-        </div>
-        <div class="help-section">
-          <h3 class="help-section-title">Shortcuts</h3>
-          <ul class="help-shortcut-list">
-            ${shortcuts.map(({ key, desc }) => `<li><kbd>${escapeHtml(key)}</kbd> — ${escapeHtml(desc)}</li>`).join('')}
           </ul>
         </div>
         <p class="help-hint">Press Shift + ? or Esc to close</p>
@@ -831,7 +831,10 @@ class Terminal {
 
     document.body.appendChild(overlay);
 
-    const closeHandler = () => overlay.remove();
+    const closeHandler = () => {
+      overlay.remove();
+      this.input.focus();
+    };
     overlay.querySelector('.help-overlay-close').addEventListener('click', closeHandler);
     overlay.addEventListener('click', (e) => { if (e.target === overlay) closeHandler(); });
     document.addEventListener('keydown', (e) => {

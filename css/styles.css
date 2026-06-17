@@ -1390,6 +1390,25 @@ body.theme-retro .command-palette {
   margin-bottom: 1.25rem;
 }
 
+.help-section--shortcuts {
+  background: rgba(0, 240, 252, 0.04);
+  border: 1px solid rgba(0, 240, 252, 0.15);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.help-section--shortcuts .help-section-title {
+  color: var(--neon-cyan);
+  font-size: 0.75rem;
+  opacity: 1;
+}
+
+.help-section--shortcuts .help-shortcut-list kbd {
+  font-size: 0.8rem;
+  padding: 0.15rem 0.5rem;
+}
+
 .help-section-title {
   color: var(--neon-pink);
   font-size: 0.7rem;
