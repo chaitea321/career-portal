@@ -42,9 +42,9 @@ describe('Three.js 3D Integration', () => {
       const swPath = path.join(JS_DIR, 'service-worker.js');
       const content = fs.readFileSync(swPath, 'utf8');
       assert.ok(content.includes('three-manager.js'), 'SW missing three-manager.js');
-      assert.ok(content.includes('three-grid.js'), 'SW missing three-grid.js');
       assert.ok(content.includes('three-geometries.js'), 'SW missing three-geometries.js');
       assert.ok(content.includes('three-init.js'), 'SW missing three-init.js');
+      assert.ok(!content.includes('three-grid.js'), 'SW should not cache unused grid module');
     });
 
     it('CSS includes three-canvas styles with correct z-index', () => {
@@ -54,9 +54,9 @@ describe('Three.js 3D Integration', () => {
       assert.ok(content.includes('z-index: 1'), 'Canvas should have z-index: 1');
     });
 
-    it('only terminal and dashboard pages include Three.js init', () => {
-      const with3D = ['index.html', 'dashboard.html'];
-      const without3D = ['project-explorer.html', 'writeups.html', 'contact.html'];
+    it('only terminal page includes Three.js init', () => {
+      const with3D = ['index.html'];
+      const without3D = ['project-explorer.html', 'writeups.html', 'contact.html', 'dashboard.html'];
       for (const page of with3D) {
         const content = fs.readFileSync(path.join(ROOT, page), 'utf8');
         assert.ok(content.includes('three-init.js'), `${page} should include three-init.js`);
@@ -71,22 +71,14 @@ describe('Three.js 3D Integration', () => {
   });
 
   describe('ThreeGeometries — Source Analysis', () => {
-    it('exports only purposeful geometry factories and scene builders', () => {
+    it('exports terminal scene builder only', () => {
       const content = fs.readFileSync(path.join(JS_DIR, 'three-geometries.js'), 'utf8');
-      // New purposeful exports
-      assert.ok(content.includes('createTopologyGraph'), 'Should export topology graph');
-      assert.ok(content.includes('createMetricGauges'), 'Should export metric gauges');
       assert.ok(content.includes('buildTerminalScene'), 'Should export terminal scene builder');
-      assert.ok(content.includes('buildDashboardScene'), 'Should export dashboard scene builder');
-      // Removed exports
-      assert.ok(!content.includes('createFlowField'), 'Should NOT export flow field (removed)');
-      assert.ok(!content.includes('createHoneycombLattice'), 'Should NOT export honeycomb (removed)');
-      assert.ok(!content.includes('createPrismMatrix'), 'Should NOT export prism matrix (removed)');
-      assert.ok(!content.includes('createWaveSurface'), 'Should NOT export wave surface (removed)');
-      assert.ok(!content.includes('createTerminalNebula'), 'Should NOT export nebula (removed)');
-      assert.ok(!content.includes('buildProjectExplorerScene'), 'Should NOT export project scene (removed)');
-      assert.ok(!content.includes('buildWriteupsScene'), 'Should NOT export writeups scene (removed)');
-      assert.ok(!content.includes('buildContactScene'), 'Should NOT export contact scene (removed)');
+      assert.ok(!content.includes('buildDashboardScene'), 'Should NOT export dashboard scene (removed)');
+      assert.ok(content.includes('createTopologyGraph'), 'Should export topology graph');
+      assert.ok(content.includes('createStarfield'), 'Should export starfield');
+      assert.ok(!content.includes('createMetricGauges'), 'Should NOT export metric gauges (removed)');
+      assert.ok(!content.includes('createGrid'), 'Should NOT import grid (removed)');
     });
 
     it('topology graph includes infrastructure service definitions', () => {
@@ -99,15 +91,11 @@ describe('Three.js 3D Integration', () => {
       assert.ok(content.includes('minecraft'), 'Should include Minecraft');
     });
 
-    it('metric gauges support setData() for live data binding', () => {
+    it('terminal scene uses starfield and topology, no grid', () => {
       const content = fs.readFileSync(path.join(JS_DIR, 'three-geometries.js'), 'utf8');
-      assert.ok(content.includes('setData(data)'), 'Gauges should have setData method');
-      assert.ok(content.includes('targetValue'), 'Gauges should animate toward target values');
-    });
-
-    it('imports createGrid from three-grid.js', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-geometries.js'), 'utf8');
-      assert.ok(content.includes("import createGrid from './three-grid.js'"), 'Should import grid');
+      assert.ok(content.includes('createStarfield'), 'Terminal scene should use starfield');
+      assert.ok(content.includes('createTopologyGraph'), 'Terminal scene should use topology');
+      assert.ok(!content.includes('createGrid'), 'Terminal scene should NOT use grid (removed)');
     });
 
     it('each geometry uses init(manager) pattern for mouse access', () => {
@@ -117,15 +105,10 @@ describe('Three.js 3D Integration', () => {
   });
 
   describe('ThreeInit — Centralized Module', () => {
-    it('supports onReady callback for scene data binding', () => {
+    it('only maps terminal scene builder', () => {
       const content = fs.readFileSync(path.join(JS_DIR, 'three-init.js'), 'utf8');
-      assert.ok(content.includes('onReady'), 'Should support onReady callback parameter');
-    });
-
-    it('only maps terminal and dashboard scene builders', () => {
-      const content = fs.readFileSync(path.join(JS_DIR, 'three-init.js'), 'utf8');
-      assert.ok(content.includes("terminal: buildTerminalScene"), 'Should map terminal');
-      assert.ok(content.includes("dashboard: buildDashboardScene"), 'Should map dashboard');
+      assert.ok(content.includes('buildTerminalScene'), 'Should map terminal');
+      assert.ok(!content.includes('buildDashboardScene'), 'Should NOT map dashboard');
     });
 
     it('skips on mobile, reduced-motion, and reduced-data', () => {
@@ -150,15 +133,11 @@ describe('Three.js 3D Integration', () => {
   });
 
   describe('Dashboard Integration', () => {
-    it('dashboard.html calls initPageScene with scene callback', () => {
+    it('dashboard.html does not include Three.js', () => {
       const content = fs.readFileSync(path.join(ROOT, 'dashboard.html'), 'utf8');
-      assert.ok(content.includes("initPageScene('dashboard'"), 'Should init dashboard scene');
-      assert.ok(content.includes('window._threeGauges'), 'Should expose gauges globally for live data');
-    });
-
-    it('dashboard.html pushes live data to 3D gauges', () => {
-      const content = fs.readFileSync(path.join(ROOT, 'dashboard.html'), 'utf8');
-      assert.ok(content.includes('_threeGauges.setData'), 'Should call setData with metrics');
+      assert.ok(!content.includes('three-init.js'), 'Dashboard should NOT include three-init.js');
+      assert.ok(!content.includes('cdn.jsdelivr.net'), 'Dashboard should NOT preconnect to jsdelivr CDN');
+      assert.ok(!content.includes('window._threeGauges'), 'Dashboard should NOT reference 3D gauges');
     });
   });
 

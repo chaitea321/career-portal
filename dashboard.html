@@ -15,7 +15,6 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
  <script type="application/ld+json">
     {
@@ -649,59 +648,6 @@
         if (gauges[1]) gauges[1].innerHTML = players + '<span class="db-gauge-sub">/' + maxPlayers + '</span>';
         if (gauges[2]) gauges[2].innerHTML = heapUsedMB + '<span class="db-gauge-sub">/' + heapMaxMB + ' MB</span>';
 
-        // Push live data to 3D gauges (Three.js)
-        if (window._threeGauges && typeof window._threeGauges.setData === 'function') {
-          window._threeGauges.setData({
-            tps,
-            players,
-            heapPercent: maxPlayers > 0 ? (heapUsedMB / heapMaxMB * 100) : 0,
-            uptimeHours: 0
-          });
-        }
-      } else {
-        // Full render for initial load
-        document.getElementById('db-minecraft').innerHTML = `
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-            <div class="db-gauge-group">
-              <div class="db-gauge-label">TPS</div>
-              <div class="db-gauge"><div class="db-gauge-fill" style="width:${Math.min(100, (tps / 20) * 100)}%"></div></div>
-              <div class="db-gauge-value">${tps}<span class="db-gauge-sub">/20</span></div>
-            </div>
-            <div class="db-gauge-group">
-              <div class="db-gauge-label">Players</div>
-              <div class="db-gauge"><div class="db-gauge-fill" style="width:${Math.min(100, (players / Math.max(maxPlayers, 1)) * 100)}%"></div></div>
-              <div class="db-gauge-value">${players}<span class="db-gauge-sub">/${maxPlayers}</span></div>
-            </div>
-            <div class="db-gauge-group">
-              <div class="db-gauge-label">Heap Usage</div>
-              <div class="db-gauge"><div class="db-gauge-fill" style="width:${Math.min(100, (heapUsedMB / Math.max(heapMaxMB, 1)) * 100)}%"></div></div>
-              <div class="db-gauge-value">${heapUsedMB}<span class="db-gauge-sub">/${heapMaxMB} MB</span></div>
-            </div>
-          </div>
-          <div class="db-server-meta" style="grid-column:1/-1;margin-top:0.5rem;">
-            <div class="db-meta-row">
-              <span class="db-meta-label">Server</span>
-              <span class="db-meta-value info">${stats.server.name}</span>
-            </div>
-            <div class="db-meta-row">
-              <span class="db-meta-label">Version</span>
-              <span class="db-meta-value">${stats.server.version} (${stats.server.javaVersion})</span>
-            </div>
-            <div class="db-meta-row">
-              <span class="db-meta-label">Uptime</span>
-              <span class="db-meta-value success">${stats.metrics.uptime}</span>
-            </div>
-            <div class="db-meta-row">
-              <span class="db-meta-label">RCON Latency</span>
-              <span class="db-meta-value info">${stats.monitoring.rconLatency}</span>
-            </div>
-            <div class="db-meta-row">
-              <span class="db-meta-label">Alerts Today</span>
-              <span class="db-meta-value ${stats.monitoring.discordAlertsToday > 0 ? 'warning' : 'success'}">${stats.monitoring.discordAlertsToday}</span>
-            </div>
-          </div>
-        `;
-      }
 
       // Changes (always re-render, no transition needed)
       const changesHtml = stats.recentChanges && stats.recentChanges.length > 0
@@ -846,13 +792,6 @@
     }
 
     init();
-  </script>
-  <script type="module">
-    import { initPageScene } from '/js/three-init.js?v=3';
-    initPageScene('dashboard', (scene) => {
-      // Expose gauge component globally so updateStats() can push live data
-      window._threeGauges = scene.gauges || null;
-    });
   </script>
 </body>
 </html>
