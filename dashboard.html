@@ -648,6 +648,16 @@
         if (gauges[0]) gauges[0].innerHTML = tps + '<span class="db-gauge-sub">/20</span>';
         if (gauges[1]) gauges[1].innerHTML = players + '<span class="db-gauge-sub">/' + maxPlayers + '</span>';
         if (gauges[2]) gauges[2].innerHTML = heapUsedMB + '<span class="db-gauge-sub">/' + heapMaxMB + ' MB</span>';
+
+        // Push live data to 3D gauges (Three.js)
+        if (window._threeGauges && typeof window._threeGauges.setData === 'function') {
+          window._threeGauges.setData({
+            tps,
+            players,
+            heapPercent: maxPlayers > 0 ? (heapUsedMB / heapMaxMB * 100) : 0,
+            uptimeHours: 0
+          });
+        }
       } else {
         // Full render for initial load
         document.getElementById('db-minecraft').innerHTML = `
@@ -838,24 +848,11 @@
     init();
   </script>
   <script type="module">
-    import ThreeManager from '/js/three-manager.js?v=3';
-    import { buildDashboardScene } from '/js/three-geometries.js?v=3';
-
-    try {
-      const three = new ThreeManager({ width: window.innerWidth, height: window.innerHeight });
-      if (!three.disabled) {
-        three.init();
-
-        const dashboardScene = buildDashboardScene(three);
-        for (const comp of dashboardScene.components) {
-          three.addComponent(comp);
-        }
-
-        window.addEventListener('beforeunload', () => three.dispose());
-      }
-    } catch (e) {
-      console.warn('[Three.js] Initialization failed:', e.message);
-    }
+    import { initPageScene } from '/js/three-init.js?v=3';
+    initPageScene('dashboard', (scene) => {
+      // Expose gauge component globally so updateStats() can push live data
+      window._threeGauges = scene.gauges || null;
+    });
   </script>
 </body>
 </html>

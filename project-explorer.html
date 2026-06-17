@@ -15,7 +15,6 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
  <script type="application/ld+json">
     {
@@ -1103,28 +1102,6 @@
     }
 
     renderProjects();
-  </script>
-  <script type="module">
-    import ThreeManager from '/js/three-manager.js?v=3';
-    import { buildProjectExplorerScene } from '/js/three-geometries.js?v=3';
-
-    try {
-      const three = new ThreeManager({ width: window.innerWidth, height: window.innerHeight });
-      if (!three.disabled) {
-        three.init();
-
-        const projectsScene = buildProjectExplorerScene(three);
-        for (const comp of projectsScene.components) {
-          three.addComponent(comp);
-        }
-
-        window.addEventListener('beforeunload', () => {
-          three.dispose();
-        });
-      }
-    } catch (e) {
-      console.warn('[Three.js] Initialization failed:', e.message);
-    }
   </script>
 </body>
 </html>

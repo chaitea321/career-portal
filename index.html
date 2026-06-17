@@ -172,24 +172,8 @@
     }
   </script>
   <script type="module">
-    import ThreeManager from '/js/three-manager.js?v=3';
-    import { buildTerminalScene } from '/js/three-geometries.js?v=3';
-
-    try {
-      const three = new ThreeManager({ width: window.innerWidth, height: window.innerHeight });
-      if (!three.disabled) {
-        three.init();
-
-        const terminalScene = buildTerminalScene(three);
-        for (const comp of terminalScene.components) {
-          three.addComponent(comp);
-        }
-
-        window.addEventListener('beforeunload', () => three.dispose());
-      }
-    } catch (e) {
-      console.warn('[Three.js] Initialization failed:', e.message);
-    }
+    import { initPageScene } from '/js/three-init.js?v=3';
+    initPageScene('terminal');
   </script>
 </body>
 </html>
