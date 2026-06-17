@@ -1,4 +1,4 @@
-const CACHE_NAME = 'career-portal-v11';
+const CACHE_NAME = 'career-portal-v12';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -16,9 +16,6 @@ const ASSETS_TO_CACHE = [
   '/js/ai-assistant.js',
   '/js/performance.js',
   '/js/contact-api.js',
-  '/js/three-manager.js',
-  '/js/three-geometries.js',
-  '/js/three-init.js',
   '/js/mobile-nav.js',
   '/js/utils/helpers.js',
   '/js/pwa.js',
