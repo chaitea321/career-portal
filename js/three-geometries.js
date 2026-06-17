@@ -171,10 +171,24 @@ function createHoneycombLattice(options = {}) {
     const geo = new THREE.IcosahedronGeometry(size, 0);
     subGeometries.push(geo);
 
-    const uniforms = { uColor: { value: new THREE.Vector3(0.0, 0.94, 0.98) }, uTime: { value: time }, uMouse: { value: new THREE.Vector2() } };
+    const uniforms = {
+      uColor: { value: new THREE.Vector3(0.0, 0.94, 0.98) },
+      uTime: { value: time }, uMouse: { value: new THREE.Vector2() }
+    };
     const mat = q.simple
-      ? new THREE.MeshBasicMaterial({ color: new THREE.Color(0.0, 0.94, 0.98), wireframe: true, transparent: true, opacity: 0.6 })
-      : new THREE.ShaderMaterial({ vertexShader: MODERN_VERT, fragmentShader: MODERN_FRAG, uniforms, transparent: true, blending: THREE.AdditiveBlending });
+      ? new THREE.MeshBasicMaterial({
+        color: new THREE.Color(0.0, 0.94, 0.98),
+        wireframe: true,
+        transparent: true,
+        opacity: 0.6
+      })
+      : new THREE.ShaderMaterial({
+        vertexShader: MODERN_VERT,
+        fragmentShader: MODERN_FRAG,
+        uniforms,
+        transparent: true,
+        blending: THREE.AdditiveBlending
+      });
     subMaterials.push(mat);
 
     const node = new THREE.Mesh(geo, mat);
@@ -212,7 +226,7 @@ function createHoneycombLattice(options = {}) {
 
   return {
     name: 'honeycomb', object: group, uniforms: { uTime: { value: time } }, hexPositions,
-    frame(delta) {
+    frame() {
       const t = this.uniforms.uTime.value;
       for (let i = 0; i < nodeCount; i++) {
         const node = hexPositions[i][3];
@@ -224,7 +238,6 @@ function createHoneycombLattice(options = {}) {
     animate(delta) {
       const mx = this.manager ? this.manager.mouse.x : 0;
       const my = this.manager ? this.manager.mouse.y : 0;
-      const t = this.uniforms.uTime.value;
       for (let i = 0; i < nodeCount; i++) {
         const node = hexPositions[i][3];
         if (node) {
@@ -304,16 +317,15 @@ function createDataStream(options = {}) {
   return {
     name: 'datastream', object: particles, uniforms,
     originalPositions, velocities, count, height, spread, geometry,
-    frame(delta) {
+    frame(d) {
       const mx = this.manager ? this.manager.mouse.x : 0;
       const my = this.manager ? this.manager.mouse.y : 0;
       const pos = geometry.attributes.position.array;
-      const t = uniforms.uTime.value;
 
       for (let i = 0; i < count; i++) {
         const i3 = i * 3;
         // Stream downward flow
-        velocities[i3 + 1] += delta * 2;
+        velocities[i3 + 1] += d * 2;
         if (velocities[i3 + 1] > height / 2) {
           positions[i3] = originalPositions[i3];
           positions[i3 + 1] = -height / 2;
@@ -326,12 +338,12 @@ function createDataStream(options = {}) {
         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
         const force = Math.min(0.2 / (dist * 0.1 + 1), 0.3);
 
-        pos[i3] += dx * force * delta * 0.5;
-        pos[i3 + 1] += velocities[i3 + 1] * delta + dy * force * delta * 0.3;
+        pos[i3] += dx * force * d * 0.5;
+        pos[i3 + 1] += velocities[i3 + 1] * d + dy * force * d * 0.3;
       }
 
       geometry.attributes.position.needsUpdate = true;
-      uniforms.uTime.value += delta;
+      uniforms.uTime.value += d;
     },
     animate() {},
     init(manager) { this.manager = manager; },
@@ -368,10 +380,24 @@ function createPrismMatrix(options = {}) {
         const geo = new THREE.BoxGeometry(size, size, size);
         subGeometries.push(geo);
 
-        const uniforms = { uColor: { value: new THREE.Vector3(0.73, 0.07, 1.0) }, uTime: { value: time }, uMouse: { value: new THREE.Vector2() } };
+        const uniforms = {
+          uColor: { value: new THREE.Vector3(0.73, 0.07, 1.0) },
+          uTime: { value: time }, uMouse: { value: new THREE.Vector2() }
+        };
         const mat = q.simple
-          ? new THREE.MeshBasicMaterial({ color: new THREE.Color(0.73, 0.07, 1.0), wireframe: true, transparent: true, opacity: 0.5 })
-          : new THREE.ShaderMaterial({ vertexShader: MODERN_VERT, fragmentShader: MODERN_FRAG, uniforms, transparent: true, blending: THREE.AdditiveBlending });
+          ? new THREE.MeshBasicMaterial({
+            color: new THREE.Color(0.73, 0.07, 1.0),
+            wireframe: true,
+            transparent: true,
+            opacity: 0.5
+          })
+          : new THREE.ShaderMaterial({
+            vertexShader: MODERN_VERT,
+            fragmentShader: MODERN_FRAG,
+            uniforms,
+            transparent: true,
+            blending: THREE.AdditiveBlending
+          });
         subMaterials.push(mat);
 
         const cube = new THREE.Mesh(geo, mat);
@@ -387,26 +413,25 @@ function createPrismMatrix(options = {}) {
 
   return {
     name: 'prism', object: group, uniforms: { uTime: { value: time } }, cubes,
-    frame(delta) {
-      const t = this.uniforms.uTime.value;
+    frame(_d) {
       for (const c of cubes) {
-        c.mesh.rotation.x += delta * (0.3 + Math.abs(c.basePos[2]) * 0.1);
-        c.mesh.rotation.y += delta * (0.2 + Math.abs(c.basePos[0]) * 0.1);
+        c.mesh.rotation.x += _d * (0.3 + Math.abs(c.basePos[2]) * 0.1);
+        c.mesh.rotation.y += _d * (0.2 + Math.abs(c.basePos[0]) * 0.1);
       }
     },
-    animate(delta) {
+    animate(_delta) {
       const mx = this.manager ? this.manager.mouse.x : 0;
       const my = this.manager ? this.manager.mouse.y : 0;
       const t = this.uniforms.uTime.value;
       for (const c of cubes) {
-        const [bx, by, bz] = c.basePos;
+        const [bx, by] = c.basePos;
         // Mouse influence — cubes closer to cursor rotate faster
         const dx = mx * 5 - bx;
         const dy = my * 5 - by;
         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
         const influence = Math.min(0.3 / (dist * 0.1 + 1), 0.5);
 
-        c.mesh.rotation.z += influence * delta * 2;
+        c.mesh.rotation.z += influence * _delta * 2;
         c.mesh.position.y = by + Math.sin(t * 0.5 + bx * 0.5) * 0.1 * influence;
       }
     },
@@ -457,16 +482,27 @@ function createWaveSurface(options = {}) {
   geometry.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(uvs), 2));
   geometry.computeVertexNormals();
 
-  const uniforms = { uColor: { value: new THREE.Vector3(1.0, 0.0, 0.98) }, uTime: { value: time }, uMouse: { value: new THREE.Vector2() } };
+  const uniforms = {
+    uColor: { value: new THREE.Vector3(1.0, 0.0, 0.98) },
+    uTime: { value: time }, uMouse: { value: new THREE.Vector2() }
+  };
   const material = q.simple
-    ? new THREE.MeshBasicMaterial({ color: new THREE.Color(1.0, 0.0, 0.98), wireframe: true, transparent: true, opacity: 0.4 })
-    : new THREE.ShaderMaterial({ vertexShader: MODERN_VERT, fragmentShader: MODERN_FRAG, uniforms, transparent: true, blending: THREE.AdditiveBlending });
+    ? new THREE.MeshBasicMaterial({
+      color: new THREE.Color(1.0, 0.0, 0.98),
+      wireframe: true, transparent: true, opacity: 0.4
+    })
+    : new THREE.ShaderMaterial({
+      vertexShader: MODERN_VERT,
+      fragmentShader: MODERN_FRAG,
+      uniforms, transparent: true,
+      blending: THREE.AdditiveBlending
+    });
 
   const mesh = new THREE.Mesh(geometry, material);
   return {
     name: 'wavesurface', object: mesh, uniforms, geometry,
-    frame(delta) { uniforms.uTime.value += delta; },
-    animate(delta) {
+    frame(d) { uniforms.uTime.value += d; },
+    animate(_d) {
       const mx = this.manager ? this.manager.mouse.x : 0;
       const my = this.manager ? this.manager.mouse.y : 0;
       const t = uniforms.uTime.value;
@@ -574,7 +610,6 @@ function createTerminalNebula(options = {}) {
         // Drift toward cursor in XZ plane
         const targetX = originalPos[i3] + mx * 2;
         const targetY = originalPos[i3 + 1] + my * 2;
-        const targetZ = originalPos[i3 + 2];
         pos[i3] += (targetX - pos[i3]) * delta * 0.5;
         pos[i3 + 1] += (targetY - pos[i3 + 1]) * delta * 0.5;
         // Ambient noise

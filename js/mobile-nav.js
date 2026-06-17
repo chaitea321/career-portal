@@ -10,13 +10,13 @@ export function initMobileNav() {
   if (menuBtn && mobileNav) {
     const focusableSelectors = 'a[href], button:not([disabled]), input, select, textarea';
 
-    function getFocusableElements() {
+    const getFocusableElements = () => {
       return Array.from(mobileNav.querySelectorAll(focusableSelectors)).filter(el =>
         el.offsetParent !== null && !el.hasAttribute('aria-hidden')
       );
-    }
+    };
 
-    function closeMenu() {
+    const closeMenu = () => {
       mobileNav.classList.remove('open');
       menuBtn.setAttribute('aria-expanded', 'false');
       menuBtn.classList.remove('active');
@@ -27,9 +27,9 @@ export function initMobileNav() {
       bar2.className = 'bar bar-2';
       menuBtn.appendChild(bar1);
       menuBtn.appendChild(bar2);
-    }
+    };
 
-    function openMenu() {
+    const openMenu = () => {
       mobileNav.classList.add('open');
       menuBtn.setAttribute('aria-expanded', 'true');
       menuBtn.classList.add('active');
@@ -48,9 +48,9 @@ export function initMobileNav() {
       if (firstFocusable) {
         setTimeout(() => firstFocusable.focus(), 50);
       }
-    }
+    };
 
-    function trapFocus(e) {
+    const trapFocus = (e) => {
       if (!mobileNav.classList.contains('open')) return;
       const focusable = getFocusableElements();
       if (focusable.length === 0) return;
@@ -74,7 +74,7 @@ export function initMobileNav() {
         closeMenu();
         menuBtn.focus();
       }
-    }
+    };
 
     document.addEventListener('keydown', trapFocus);
 
@@ -128,7 +128,7 @@ export function initMobileNav() {
     });
 
     // Highlight current page in bottom nav
-    function highlightCurrentPage() {
+    const highlightCurrentPage = () => {
       const currentPath = window.location.pathname;
       navItems.forEach(item => {
         const href = item.getAttribute('href');
@@ -140,7 +140,7 @@ export function initMobileNav() {
           item.removeAttribute('aria-current');
         }
       });
-    }
+    };
 
     highlightCurrentPage();
 
@@ -177,7 +177,6 @@ export function initMobileNav() {
     `;
     document.body.appendChild(indicator);
 
-    let scrollTimeout;
     window.addEventListener('scroll', () => {
       if (window.scrollY > 300) {
         indicator.style.display = 'block';

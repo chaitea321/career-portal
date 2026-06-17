@@ -1,2 +1,2 @@
-# ESLint v6.4.0 has a known parsing bug with import statements after comments in some files
+# terminal.js is ignored — it uses import+comment patterns that trigger ESLint parse bugs in v8.x
 js/terminal.js
