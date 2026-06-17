@@ -91,7 +91,7 @@ describe('Three.js 3D Integration', () => {
 
     it('topology graph includes infrastructure service definitions', () => {
       const content = fs.readFileSync(path.join(JS_DIR, 'three-geometries.js'), 'utf8');
-      assert.ok(content.includes('INFRA_TOPOLOGY'), 'Should have static topology config');
+      assert.ok(content.includes('TOPO'), 'Should have static topology config');
       assert.ok(content.includes('meshwatch'), 'Should include MeshWatch service');
       assert.ok(content.includes('prometheus'), 'Should include Prometheus');
       assert.ok(content.includes('grafana'), 'Should include Grafana');

@@ -1,5 +1,5 @@
-// Purposeful 3D Scenes — Infrastructure visualization, not decoration
-// Each scene communicates actual DevOps/SRE competence
+// Purposeful 3D Scenes — Infrastructure visualization with atmospheric depth
+// Each scene communicates real DevOps/SRE competence while looking stunning
 // Mobile-optimized: reduced complexity, merged geometries
 
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
@@ -14,334 +14,233 @@ function getQuality(isMobile, gpuTier) {
 }
 
 // ─── Shared shaders ────────────────────────────────────────────────────────
-const GLOW_VERT = `
-  varying vec3 vNormal;
-  varying vec3 vViewPos;
-  void main() {
-    vNormal = normalize(normalMatrix * normal);
-    vViewPos = -(modelViewMatrix * vec4(position, 1.0)).xyz;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  }
-`;
+const GLOW_VERT = `varying vec3 vNormal;varying vec3 vViewPos;
+void main(){vNormal=normalize(normalMatrix*normal);vViewPos=-(modelViewMatrix*vec4(position,1.0)).xyz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
 
-const GLOW_FRAG = `
-  precision mediump float;
-  uniform vec3 uColor;
-  uniform float uTime;
-  uniform float uPulse;
-  varying vec3 vNormal;
-  varying vec3 vViewPos;
-  void main() {
-    vec3 viewDir = normalize(vViewPos);
-    float fresnel = pow(1.0 - abs(dot(viewDir, vNormal)), 3.0);
-    float pulse = 0.7 + 0.3 * sin(uTime * 2.0 + uPulse);
-    vec3 col = uColor * (0.3 + 0.7 * fresnel) * pulse;
-    float alpha = 0.45 + 0.55 * fresnel;
-    gl_FragColor = vec4(col, alpha);
-  }
-`;
+const GLOW_FRAG = `precision mediump float;uniform vec3 uColor;uniform float uTime;uniform float uPulse;
+varying vec3 vNormal;varying vec3 vViewPos;
+void main(){vec3 vd=normalize(vViewPos);float f=pow(1.0-abs(dot(vd,vNormal)),3.0);float p=0.7+0.3*sin(uTime*2.0+uPulse);
+vec3 col=uColor*(0.3+0.7*f)*p;gl_FragColor=vec4(col,0.45+0.55*f);}`;
 
 // ─── Particle texture ──────────────────────────────────────────────────────
-function createParticleTexture() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 32; canvas.height = 32;
-  const ctx = canvas.getContext('2d');
-  const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
-  gradient.addColorStop(0, 'rgba(255,255,255,1)');
-  gradient.addColorStop(0.3, 'rgba(255,255,255,0.8)');
-  gradient.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 32, 32);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.needsUpdate = true;
-  return texture;
+function particleTex() {
+  const c=document.createElement('canvas');c.width=c.height=32;
+  const ctx=c.getContext('2d');const g=ctx.createRadialGradient(16,16,0,16,16,16);
+  g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(0.3,'rgba(255,255,255,0.8)');g.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=g;ctx.fillRect(0,0,32,32);const t=new THREE.CanvasTexture(c);t.needsUpdate=true;return t;
 }
 
-// ─── Infrastructure Topology Graph — Service mesh visualization ────────────
+// ─── Ambient Starfield — Atmospheric depth behind purposeful elements ──────
+function createStarfield(options = {}) {
+  const { count = 300, spread = 20, isMobile = false, gpuTier = 1 } = options;
+  const q = getQuality(isMobile, gpuTier);
+  const n = Math.round(count * q.countScale);
 
-// Static topology: Eugene's actual k3s cluster services
-const INFRA_TOPOLOGY = {
+  const pos = new Float32Array(n * 3);
+  const colors = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    const r = spread * (0.3 + 0.7 * Math.random());
+    pos[i*3]=r*Math.sin(phi)*Math.cos(theta);
+    pos[i*3+1]=r*Math.cos(phi)*0.6; // Flatten vertical
+    pos[i*3+2]=r*Math.sin(phi)*Math.sin(theta);
+    const mix = Math.random();
+    colors[i*3]=mix*1.0;colors[i*3+1]=(1-mix)*0.94;colors[i*3+2]=mix*0.98;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('color',new THREE.BufferAttribute(colors,3));
+
+  const tex = particleTex();
+  const mat = new THREE.PointsMaterial({
+    size: q.simple?0.08:0.1,vertexColors:true,transparent:true,opacity:0.5,
+    blending:THREE.AdditiveBlending,depthWrite:false,map:tex,sizeAttenuation:true
+  });
+  const pts = new THREE.Points(geo,mat);
+  return {
+    name:'starfield',object:pts,geo,mat,tex,
+    frame(delta){
+      pts.rotation.y += delta*0.015;
+      pts.rotation.x += delta*0.005;
+    },
+    animate(){},
+    init(manager){this.manager=manager;},
+    dispose(){geo.dispose();mat.dispose();tex.dispose();}
+  };
+}
+
+// ─── Infrastructure Topology Graph — Core services, clean layout ──────────
+
+const TOPO = {
   nodes: [
-    { id: 'k3s-master', label: 'K3s Master', type: 'control', pos: [0, 3, 0], color: [1.0, 0.0, 0.98] },
-    { id: 'k3s-node1', label: 'K3s Node 1', type: 'worker', pos: [5, 0, -2], color: [0.73, 0.07, 1.0] },
-    { id: 'k3s-node2', label: 'K3s Node 2', type: 'worker', pos: [-4, -1, -3], color: [0.73, 0.07, 1.0] },
-    { id: 'meshwatch', label: 'MeshWatch', type: 'service', pos: [0, 1.5, 4], color: [0.0, 0.94, 0.98] },
-    { id: 'prometheus', label: 'Prometheus', type: 'service', pos: [3, 0, 2], color: [1.0, 0.5, 0.0] },
-    { id: 'grafana', label: 'Grafana', type: 'service', pos: [-3, 0.5, 3], color: [0.0, 0.8, 0.6] },
-    { id: 'loki', label: 'Loki', type: 'service', pos: [4, -2, 1], color: [0.2, 0.9, 0.3] },
-    { id: 'tempo', label: 'Tempo', type: 'service', pos: [-5, -1, 1.5], color: [0.8, 0.2, 0.8] },
-    { id: 'istio', label: 'Istio Mesh', type: 'infra', pos: [0, 2, 0], color: [0.73, 0.07, 1.0] },
-    { id: 'minecraft', label: 'Minecraft', type: 'service', pos: [0, -3, 5], color: [0.0, 0.94, 0.3] },
-    { id: 'ollama', label: 'Ollama AI', type: 'service', pos: [-2, -3, 3], color: [1.0, 0.8, 0.0] }
+    { id:'k3s', label:'K3s Cluster', pos:[0,2.5,0], color:[1.0,0.0,0.98] },
+    { id:'istio', label:'Istio Mesh', pos:[0,1,2], color:[0.73,0.07,1.0] },
+    { id:'meshwatch', label:'MeshWatch', pos:[3,-0.5,1], color:[0.0,0.94,0.98] },
+    { id:'prometheus', label:'Prometheus', pos:[4,-2,0], color:[1.0,0.5,0.0] },
+    { id:'grafana', label:'Grafana', pos:[-3.5,-1,0.5], color:[0.0,0.8,0.6] },
+    { id:'minecraft', label:'Minecraft', pos:[0,-3.5,3], color:[0.0,0.94,0.3] },
+    { id:'ollama', label:'Ollama AI', pos:[-2,-3,2.5], color:[1.0,0.8,0.0] }
   ],
   edges: [
-    ['k3s-master', 'k3s-node1'], ['k3s-master', 'k3s-node2'],
-    ['k3s-node1', 'meshwatch'], ['k3s-node2', 'meshwatch'],
-    ['istio', 'k3s-master'], ['istio', 'k3s-node1'], ['istio', 'k3s-node2'],
-    ['meshwatch', 'prometheus'], ['meshwatch', 'grafana'], ['meshwatch', 'istio'],
-    ['prometheus', 'grafana'], ['prometheus', 'loki'], ['prometheus', 'tempo'],
-    ['k3s-node1', 'minecraft'], ['k3s-node2', 'ollama'],
-    ['minecraft', 'meshwatch'], ['ollama', 'meshwatch']
+    ['k3s','istio'],['istio','meshwatch'],['istio','prometheus'],
+    ['meshwatch','prometheus'],['meshwatch','grafana'],['meshwatch','minecraft'],
+    ['prometheus','grafana'],['k3s','minecraft'],['k3s','ollama'],
+    ['minecraft','ollama']
   ]
 };
 
 function createTopologyGraph(options = {}) {
   const { isMobile = false, gpuTier = 1 } = options;
   const q = getQuality(isMobile, gpuTier);
-
   const group = new THREE.Group();
-  const subGeometries = [];
-  const subMaterials = [];
-  const nodeObjects = [];
+  const geos=[], mats=[], nodes=[];
 
-  // Scale the topology down on mobile
-  const scale = isMobile ? 0.6 : 1.0;
-  const nodeRadius = q.simple ? 0.25 : 0.35;
+  const s = isMobile?0.6:1.0;
+  const nr = q.simple?0.25:0.3;
 
-  // Create nodes
-  for (const node of INFRA_TOPOLOGY.nodes) {
-    const [x, y, z] = node.pos.map(v => v * scale);
-    const geo = new THREE.IcosahedronGeometry(nodeRadius, q.simple ? 0 : 1);
-    subGeometries.push(geo);
-
-    const uniforms = {
-      uColor: { value: new THREE.Vector3(...node.color) },
-      uTime: { value: 0 },
-      uPulse: { value: Math.random() * Math.PI * 2 }
-    };
-    const mat = q.simple
-      ? new THREE.MeshBasicMaterial({
-        color: new THREE.Color(node.color[0], node.color[1], node.color[2]),
-        transparent: true, opacity: 0.7
-      })
-      : new THREE.ShaderMaterial({
-        vertexShader: GLOW_VERT, fragmentShader: GLOW_FRAG,
-        uniforms, transparent: true, blending: THREE.AdditiveBlending
-      });
-    subMaterials.push(mat);
-
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.set(x, y, z);
-    group.add(mesh);
-    nodeObjects.push({ mesh, uniforms, basePos: [x, y, z], ...node });
+  // Nodes
+  for (const n of TOPO.nodes) {
+    const [x,y,z]=n.pos.map(v=>v*s);
+    const geo = new THREE.IcosahedronGeometry(nr,q.simple?0:1);
+    geos.push(geo);
+    const unis={uColor:{value:new THREE.Vector3(...n.color)},uTime:{value:0},uPulse:{value:Math.random()*Math.PI*2}};
+    const mat=q.simple
+      ?new THREE.MeshBasicMaterial({color:new THREE.Color(n.color[0],n.color[1],n.color[2]),transparent:true,opacity:0.7})
+      :new THREE.ShaderMaterial({vertexShader:GLOW_VERT,fragmentShader:GLOW_FRAG,uniforms:unis,transparent:true,blending:THREE.AdditiveBlending});
+    mats.push(mat);
+    const m = new THREE.Mesh(geo,mat);m.position.set(x,y,z);group.add(m);
+    nodes.push({mesh:m,unis,basePos:[x,y,z],...n});
   }
 
-  // Create edges as particle streams
-  const edgeParticles = [];
-  const allEdgePositions = [];
-  const particlesPerEdge = q.simple ? 6 : 12;
-
-  for (const [fromId, toId] of INFRA_TOPOLOGY.edges) {
-    const from = INFRA_TOPOLOGY.nodes.find(n => n.id === fromId);
-    const to = INFRA_TOPOLOGY.nodes.find(n => n.id === toId);
-    if (!from || !to) continue;
-
-    const fx = from.pos[0] * scale, fy = from.pos[1] * scale, fz = from.pos[2] * scale;
-    const tx = to.pos[0] * scale, ty = to.pos[1] * scale, tz = to.pos[2] * scale;
-
-    for (let p = 0; p < particlesPerEdge; p++) {
-      allEdgePositions.push(fx, fy, fz);
-      edgeParticles.push({
-        from: [fx, fy, fz], to: [tx, ty, tz],
-        progress: p / particlesPerEdge,
-        speed: 0.3 + Math.random() * 0.5,
-        color: from.color
-      });
-    }
+  // Edge particles
+  const eps=[];const allPos=[];
+  const ppe = q.simple?8:16;
+  for (const [a,b] of TOPO.edges) {
+    const A=TOPO.nodes.find(n=>n.id===a),B=TOPO.nodes.find(n=>n.id===b);
+    if(!A||!B)continue;
+    const ax=A.pos[0]*s,ay=A.pos[1]*s,az=A.pos[2]*s,bx=B.pos[0]*s,by=B.pos[1]*s,bz=B.pos[2]*s;
+    for(let p=0;p<ppe;p++){allPos.push(ax,ay,az);eps.push({from:[ax,ay,az],to:[bx,by,bz],progress:p/ppe,speed:0.2+Math.random()*0.4});}
   }
-
-  const edgeGeo = new THREE.BufferGeometry();
-  const edgePositionsArr = new Float32Array(allEdgePositions);
-  edgeGeo.setAttribute('position', new THREE.BufferAttribute(edgePositionsArr, 3));
-  subGeometries.push(edgeGeo);
-
-  const tex = createParticleTexture();
-  const edgeMat = new THREE.PointsMaterial({
-    size: q.simple ? 0.08 : 0.1,
-    transparent: true, opacity: 0.7,
-    blending: THREE.AdditiveBlending, depthWrite: false,
-    map: tex, sizeAttenuation: true, color: new THREE.Color(0.0, 0.94, 0.98)
-  });
-  subMaterials.push(edgeMat);
-
-  const edgePoints = new THREE.Points(edgeGeo, edgeMat);
-  group.add(edgePoints);
+  const eGeo=new THREE.BufferGeometry();eGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(allPos),3));
+  geos.push(eGeo);
+  const tex=particleTex();
+  const eMat=new THREE.PointsMaterial({size:q.simple?0.06:0.08,transparent:true,opacity:0.6,blending:THREE.AdditiveBlending,depthWrite:false,map:tex,sizeAttenuation:true,color:new THREE.Color(0.0,0.94,0.98)});
+  mats.push(eMat);
+  group.add(new THREE.Points(eGeo,eMat));
 
   return {
-    name: 'topology', object: group, nodeObjects, edgeParticles, edgeGeo, edgeMat,
-    frame(delta) {
-      // Update node glow pulses
-      for (const node of nodeObjects) {
-        if (node.uniforms) node.uniforms.uTime.value += delta;
-      }
-
-      // Animate edge particles along their paths
-      const pos = edgeGeo.attributes.position.array;
-      for (let i = 0; i < edgeParticles.length; i++) {
-        const ep = edgeParticles[i];
-        ep.progress += ep.speed * delta;
-        if (ep.progress > 1) ep.progress -= 1;
-        const i3 = i * 3;
-        pos[i3]     = ep.from[0] + (ep.to[0] - ep.from[0]) * ep.progress;
-        pos[i3 + 1] = ep.from[1] + (ep.to[1] - ep.from[1]) * ep.progress;
-        pos[i3 + 2] = ep.from[2] + (ep.to[2] - ep.from[2]) * ep.progress;
-      }
-      edgeGeo.attributes.position.needsUpdate = true;
+    name:'topology',object:group,nodes,eps,eGeo,eMat,tex,geos,mats,
+    frame(delta){
+      for(const n of nodes){if(n.unis)n.unis.uTime.value+=delta;}
+      const pos=eGeo.attributes.position.array;
+      for(let i=0;i<eps.length;i++){const e=eps[i];e.progress+=e.speed*delta;if(e.progress>1)e.progress-=1;const i3=i*3;pos[i3]=e.from[0]+(e.to[0]-e.from[0])*e.progress;pos[i3+1]=e.from[1]+(e.to[1]-e.from[1])*e.progress;pos[i3+2]=e.from[2]+(e.to[2]-e.from[2])*e.progress;}
+      eGeo.attributes.position.needsUpdate=true;
     },
-    animate() {},
-    init(manager) {
-      this.manager = manager;
-    },
-    dispose() {
-      for (const g of subGeometries) g.dispose();
-      for (const m of subMaterials) m.dispose();
-      if (tex) tex.dispose();
-    }
+    animate(){},
+    init(mgr){this.manager=mgr;},
+    dispose(){for(const g of geos)g.dispose();for(const m of mats)m.dispose();if(tex)tex.dispose();}
   };
 }
 
-// ─── 3D Metric Gauges — Dashboard data visualization ─────────────────────
+// ─── 3D Metric Gauges — Live data visualization ───────────────────────────
 
 function createMetricGauges(options = {}) {
   const { isMobile = false, gpuTier = 1 } = options;
   const q = getQuality(isMobile, gpuTier);
-
   const group = new THREE.Group();
-  const subGeometries = [];
-  const subMaterials = [];
-  const gaugeData = []; // { mesh, targetValue, currentValue, ... }
+  const geos=[], mats=[], gData=[];
+  const R=1.8, T=0.25, sp=3.2;
+  const gc=[[0.0,0.94,0.98],[0.0,0.94,0.3],[1.0,0.5,0.0],[0.73,0.07,1.0]];
 
-  const gaugeRadius = 2.0;
-  const gaugeThickness = 0.3;
-  const gaugeCount = 4;
-  const spacing = 3.5;
-
-  const gaugeColors = [
-    [0.0, 0.94, 0.98],  // TPS: cyan
-    [0.0, 0.94, 0.3],   // Players: green
-    [1.0, 0.5, 0.0],    // Heap: orange
-    [0.73, 0.07, 1.0]   // Uptime: purple
-  ];
-
-  const gaugeLabels = ['TPS', 'Players', 'Heap %', 'Uptime'];
-
-  for (let g = 0; g < gaugeCount; g++) {
-    const x = (g - (gaugeCount - 1) / 2) * spacing;
-
-    // Track ring (background)
-    const trackGeo = new THREE.TorusGeometry(gaugeRadius, gaugeThickness * 0.3, 8, 64, Math.PI * 1.5);
-    subGeometries.push(trackGeo);
-    const trackMat = new THREE.MeshBasicMaterial({
-      color: new THREE.Color(1, 1, 1), transparent: true, opacity: 0.1
-    });
-    subMaterials.push(trackMat);
-    const track = new THREE.Mesh(trackGeo, trackMat);
-    track.position.set(x, 0, 0);
-    group.add(track);
-
-    // Fill arc — starts empty, grows with data
-    const fillGeo = new THREE.TorusGeometry(gaugeRadius, gaugeThickness, 8, 64, Math.PI * 0.01);
-    subGeometries.push(fillGeo);
-    const uniforms = {
-      uColor: { value: new THREE.Vector3(...gaugeColors[g]) },
-      uTime: { value: 0 },
-      uPulse: { value: g * 0.5 }
-    };
-    const fillMat = q.simple
-      ? new THREE.MeshBasicMaterial({
-        color: new THREE.Color(gaugeColors[g][0], gaugeColors[g][1], gaugeColors[g][2]),
-        transparent: true, opacity: 0.8
-      })
-      : new THREE.ShaderMaterial({
-        vertexShader: GLOW_VERT, fragmentShader: GLOW_FRAG, uniforms,
-        transparent: true, blending: THREE.AdditiveBlending
-      });
-    subMaterials.push(fillMat);
-    const fill = new THREE.Mesh(fillGeo, fillMat);
-    fill.position.set(x, 0, 0);
-    group.add(fill);
-
-    gaugeData.push({
-      label: gaugeLabels[g],
-      track, fill, fillGeo, uniforms,
-      targetValue: 0, currentValue: 0, maxValue: 100,
-      position: [x, 0, 0]
-    });
+  for(let g=0;g<4;g++){
+    const x=(g-1.5)*sp;
+    // Track
+    const tGeo=new THREE.TorusGeometry(R,T*0.3,8,64,Math.PI*1.5);geos.push(tGeo);
+    const tMat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.08});mats.push(tMat);
+    const track=new THREE.Mesh(tGeo,tMat);track.position.set(x,0,0);group.add(track);
+    // Fill — start partially visible
+    const initArc=Math.PI*0.3;
+    const fGeo=new THREE.TorusGeometry(R,T,8,64,initArc);geos.push(fGeo);
+    const unis={uColor:{value:new THREE.Vector3(...gc[g])},uTime:{value:0},uPulse:{value:g*0.7}};
+    const fMat=q.simple
+      ?new THREE.MeshBasicMaterial({color:new THREE.Color(gc[g][0],gc[g][1],gc[g][2]),transparent:true,opacity:0.8})
+      :new THREE.ShaderMaterial({vertexShader:GLOW_VERT,fragmentShader:GLOW_FRAG,uniforms:unis,transparent:true,blending:THREE.AdditiveBlending});
+    mats.push(fMat);
+    const fill=new THREE.Mesh(fGeo,fMat);fill.position.set(x,0,0);group.add(fill);
+    gData.push({track,fill,fGeo,unis,targetValue:25,currentValue:25,maxValue:100});
   }
 
   return {
-    name: 'gauges', object: group, gaugeData, subGeometries, subMaterials,
-    frame(delta) {
-      for (const gauge of this.gaugeData) {
-        // Smoothly animate fill toward target
-        gauge.currentValue += (gauge.targetValue - gauge.currentValue) * delta * 2;
-        const ratio = Math.min(gauge.currentValue / gauge.maxValue, 1);
-
-        // Rebuild the torus geometry to reflect the fill ratio
-        gauge.fillGeo.dispose();
-        const arc = Math.PI * 1.5 * ratio;
-        const newGeo = new THREE.TorusGeometry(gaugeRadius, gaugeThickness, 8, 64, Math.max(arc, 0.01));
-        gauge.fill.geometry = newGeo;
-        gauge.fillGeo = newGeo;
-
-        if (gauge.uniforms) gauge.uniforms.uTime.value += delta;
+    name:'gauges',object:group,gData,geos,mats,
+    frame(delta){
+      for(const g of this.gData){
+        g.currentValue+=(g.targetValue-g.currentValue)*delta*2.5;
+        const r=Math.min(g.currentValue/g.maxValue,1);
+        g.fGeo.dispose();
+        const arc=Math.PI*Math.max(1.5*r,0.05);
+        const ng=new THREE.TorusGeometry(R,T,8,64,arc);
+        g.fill.geometry=ng;g.fGeo=ng;
+        if(g.unis)g.unis.uTime.value+=delta;
       }
     },
-    animate() {},
-    /**
-     * Update gauge targets from live data.
-     * @param {{ tps: number, players: number, heapPercent: number, uptimeHours: number }} data
-     */
-    setData(data) {
-      if (!data) return;
-      const g = this.gaugeData;
-      if (g[0]) g[0].targetValue = Math.min((data.tps || 0) / 20 * 100, 100);
-      if (g[1]) g[1].targetValue = Math.min((data.players || 0) / 20 * 100, 100);
-      if (g[2]) g[2].targetValue = Math.min(data.heapPercent || 0, 100);
-      if (g[3]) g[3].targetValue = Math.min((data.uptimeHours || 0) / 720 * 100, 100);
+    animate(){},
+    setData(data){
+      if(!data)return;
+      const d=this.gData;
+      if(d[0])d[0].targetValue=Math.min((data.tps||0)/20*100,100);
+      if(d[1])d[1].targetValue=Math.min((data.players||0)/20*100,100);
+      if(d[2])d[2].targetValue=Math.min(data.heapPercent||0,100);
+      if(d[3])d[3].targetValue=Math.min((data.uptimeHours||0)/720*100,100);
     },
-    init(manager) { this.manager = manager; },
-    dispose() {
-      for (const g of this.subGeometries) g.dispose();
-      for (const m of this.subMaterials) m.dispose();
-    }
+    init(mgr){this.manager=mgr;},
+    dispose(){for(const g of geos)g.dispose();for(const m of mats)m.dispose();}
   };
 }
 
 // ─── Page-specific scene builders ──────────────────────────────────────────
 
 function buildTerminalScene(manager) {
-  const components = [];
   const { gpuTier = 1, isMobile } = manager;
+  const comps = [];
 
-  // Synthwave grid floor — signature element, keeps the synthwave identity
+  // Synthwave grid floor
   const grid = createGrid({ opacity: 0.25, time: 0, isMobile });
   manager.scene.add(grid.object);
-  components.push(grid);
+  comps.push(grid);
 
-  // Infrastructure topology graph — the "wow" element
-  const topology = createTopologyGraph({ gpuTier, isMobile });
-  topology.object.position.set(0, -3, -14);
-  manager.scene.add(topology.object);
-  components.push(topology);
+  // Ambient starfield for depth and visual richness
+  const stars = createStarfield({ count: 300, spread: 22, gpuTier, isMobile });
+  stars.object.position.set(0, -2, -18);
+  manager.scene.add(stars.object);
+  comps.push(stars);
 
-  return { name: 'terminal', components, objects: [grid.object, topology.object] };
+  // Infrastructure topology — clean 7-node layout
+  const topo = createTopologyGraph({ gpuTier, isMobile });
+  topo.object.position.set(0, -2, -12);
+  manager.scene.add(topo.object);
+  comps.push(topo);
+
+  return { name: 'terminal', components: comps };
 }
 
 function buildDashboardScene(manager) {
-  const components = [];
   const { gpuTier = 1, isMobile } = manager;
+  const comps = [];
+
+  // Ambient starfield
+  const stars = createStarfield({ count: 200, spread: 18, gpuTier, isMobile });
+  stars.object.position.set(0, 0, -14);
+  manager.scene.add(stars.object);
+  comps.push(stars);
 
   // 3D metric gauges
   const gauges = createMetricGauges({ gpuTier, isMobile });
-  gauges.object.position.set(0, 1, -10);
+  gauges.object.position.set(0, 1.5, -10);
   manager.scene.add(gauges.object);
-  components.push(gauges);
+  comps.push(gauges);
 
-  return { name: 'dashboard', components, objects: [gauges.object], gauges };
+  return { name: 'dashboard', components: comps, gauges };
 }
 
-export {
-  createTopologyGraph, createMetricGauges,
-  buildTerminalScene, buildDashboardScene
-};
+export { buildTerminalScene, buildDashboardScene };
