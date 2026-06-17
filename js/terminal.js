@@ -41,6 +41,7 @@ class Terminal {
     this._announcementTimeout = null;
     this.isDemoMode = false;
     this.demoInterval = null;
+    this._paletteOpen = false;
     this.currentProjectIndex = 0;
     this._meshwatchAPI = null;
     this._aiAssistant = null;
@@ -50,6 +51,7 @@ class Terminal {
     this._autocompleteSelectedIndex = -1;
     // Debounce timer for autocomplete input
     this._autocompleteTimer = null;
+    this._resizePositionTimer = null;
 
     if (typeof window !== 'undefined') {
       this.loadConfig().then(() => this.init());
@@ -208,8 +210,7 @@ class Terminal {
         this.input.addEventListener('input', () => this._onInputChange());
 
         this.input.addEventListener('blur', () => {
-          // Hide autocomplete on blur with a small delay to allow click on item
-          setTimeout(() => this._hideAutocompletePopup(), 200);
+          setTimeout(() => this._hideAutocompletePopup(), 350);
           setTimeout(() => {
             this.scrollToBottom();
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
@@ -218,6 +219,8 @@ class Terminal {
 
         document.addEventListener('keydown', (e) => {
           const isInputFocused = document.activeElement === this.input;
+          const anyInputFocused = document.activeElement &&
+            ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName);
           const isQuestion = e.key === '?' || (e.shiftKey && e.key === '?');
 
           if (e.key === 'Escape') {
@@ -236,7 +239,7 @@ class Terminal {
           } else if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
             e.preventDefault();
             this.showHelpOverlay();
-          } else if (isQuestion) {
+          } else if (isQuestion && !anyInputFocused && !this._paletteOpen) {
             e.preventDefault();
             this.showHelpOverlay();
           }
@@ -248,21 +251,30 @@ class Terminal {
           helpBtn.addEventListener('click', () => this.showHelpOverlay());
         }
 
-        // Close autocomplete when clicking outside the input or popup
-        document.addEventListener('mousedown', (e) => {
+        // Close autocomplete when clicking/touching outside the input or popup
+        const closeOnOutside = (e) => {
           if (!this._autocompletePopup || this._autocompletePopup.style.display === 'none') return;
           const target = e.target;
           if (target !== this.input && !this._autocompletePopup.contains(target)) {
             this._hideAutocompletePopup();
           }
-        });
+        };
+        document.addEventListener('mousedown', closeOnOutside);
+        document.addEventListener('touchstart', closeOnOutside, { passive: true });
       }
       window.addEventListener('resize', () => {
         this.scrollToBottom();
-        this._hideAutocompletePopup();
+        if (this._autocompletePopup && this._autocompletePopup.style.display !== 'none' && document.activeElement === this.input) {
+          clearTimeout(this._resizePositionTimer);
+          this._resizePositionTimer = setTimeout(() => this._positionAutocompletePopup(), 100);
+        } else {
+          this._hideAutocompletePopup();
+        }
       });
       window.addEventListener('scroll', () => {
-        this._positionAutocompletePopup();
+        if (this._autocompletePopup && this._autocompletePopup.style.display !== 'none') {
+          this._positionAutocompletePopup();
+        }
       }, { passive: true });
     }
   }
@@ -361,12 +373,12 @@ class Terminal {
       popup = document.createElement('div');
       popup.id = 'autocomplete-popup';
       popup.className = 'autocomplete-popup';
+      popup.setAttribute('role', 'listbox');
+      popup.setAttribute('aria-label', 'Command suggestions');
       popup.style.display = 'none';
-      // Append to body so it is not clipped by terminal overflow
       document.body.appendChild(popup);
       this._autocompletePopup = popup;
 
-      // One delegated click listener; element is re-used
       popup.addEventListener('click', (e) => {
         const item = e.target.closest('.autocomplete-item');
         if (item) {
@@ -378,7 +390,7 @@ class Terminal {
     const q = query.toLowerCase();
     popup.innerHTML = items.map((item, i) => {
       const highlighted = this._highlightMatch(item.display, q);
-      return `<div class="autocomplete-item ${i === 0 ? 'focused' : ''} ${item.isArg ? 'ac-arg' : ''}" data-value="${escapeHtml(item.value)}" data-index="${i}">
+      return `<div class="autocomplete-item ${i === 0 ? 'focused' : ''} ${item.isArg ? 'ac-arg' : ''}" data-value="${escapeHtml(item.value)}" data-index="${i}" role="option" id="ac-item-${i}" aria-selected="${i === 0 ? 'true' : 'false'}">
         <span class="ac-icon">${item.icon}</span>
         <span class="ac-cmd">${highlighted}</span>
         ${item.isArg ? '<span class="ac-arg-label">arg</span>' : ''}
@@ -386,6 +398,7 @@ class Terminal {
       </div>`;
     }).join('');
 
+    popup.setAttribute('aria-activedescendant', 'ac-item-0');
     popup.style.display = 'block';
     this._autocompleteSelectedIndex = 0;
     this._positionAutocompletePopup();
@@ -397,24 +410,45 @@ class Terminal {
     const inputRect = this.input.getBoundingClientRect();
     const popup = this._autocompletePopup;
     const popupHeight = Math.min(popup.offsetHeight || 220, 260);
+    const isMobile = 'ontouchstart' in window;
 
     // Default: show above the input line
-    let top = inputRect.top + window.scrollY - popupHeight;
-    let bottom = 'auto';
+    let top, left, width, position;
 
-    // If there is not enough room above, show below the input line
-    if (top < window.scrollY + 8) {
-      const cmdLine = this.input.closest('.command-line');
-      const cmdLineRect = cmdLine ? cmdLine.getBoundingClientRect() : inputRect;
-      top = cmdLineRect.bottom + window.scrollY;
-      bottom = 'auto';
+    if (isMobile && typeof visualViewport !== 'undefined') {
+      position = 'fixed';
+      const vv = visualViewport;
+      left = inputRect.left;
+      width = inputRect.width;
+      top = inputRect.top - popupHeight - 4;
+
+      if (top < vv.offsetTop + 8) {
+        const cmdLine = this.input.closest('.command-line');
+        const cmdLineRect = cmdLine ? cmdLine.getBoundingClientRect() : inputRect;
+        top = cmdLineRect.bottom + 4;
+        const maxTop = vv.height - popupHeight - 72;
+        if (top > maxTop) {
+          top = Math.max(vv.offsetTop + 4, maxTop);
+        }
+      }
+    } else {
+      position = 'absolute';
+      left = inputRect.left + window.scrollX;
+      width = inputRect.width;
+      top = inputRect.top + window.scrollY - popupHeight;
+
+      if (top < window.scrollY + 8) {
+        const cmdLine = this.input.closest('.command-line');
+        const cmdLineRect = cmdLine ? cmdLine.getBoundingClientRect() : inputRect;
+        top = cmdLineRect.bottom + window.scrollY;
+      }
     }
 
-    popup.style.position = 'absolute';
+    popup.style.position = position;
     popup.style.top = `${top}px`;
-    popup.style.bottom = bottom;
-    popup.style.left = `${inputRect.left + window.scrollX}px`;
-    popup.style.width = `${inputRect.width}px`;
+    popup.style.bottom = 'auto';
+    popup.style.left = `${left}px`;
+    popup.style.width = `${width}px`;
     popup.style.zIndex = '10000';
   }
 
@@ -450,8 +484,10 @@ class Terminal {
     const items = this._autocompletePopup.querySelectorAll('.autocomplete-item');
     if (!items.length) return;
 
-    // Remove focused from current
-    items.forEach(i => i.classList.remove('focused'));
+    items.forEach(i => {
+      i.classList.remove('focused');
+      i.setAttribute('aria-selected', 'false');
+    });
 
     if (direction === 'down') {
       this._autocompleteSelectedIndex = Math.min(
@@ -465,8 +501,11 @@ class Terminal {
       );
     }
 
-    items[this._autocompleteSelectedIndex].classList.add('focused');
-    items[this._autocompleteSelectedIndex].scrollIntoView({ block: 'nearest' });
+    const focusedItem = items[this._autocompleteSelectedIndex];
+    focusedItem.classList.add('focused');
+    focusedItem.setAttribute('aria-selected', 'true');
+    focusedItem.scrollIntoView({ block: 'nearest' });
+    this._autocompletePopup.setAttribute('aria-activedescendant', focusedItem.id);
   }
 
   _autocompleteAccept() {
@@ -495,7 +534,6 @@ class Terminal {
       if (this._autocompletePopup && this._autocompletePopup.style.display !== 'none') {
         if (this._autocompleteAccept()) {
           this._hideAutocompletePopup();
-          // Now execute the completed command
           const command = this.input.value.trim();
           if (command) {
             this.history.push(command);
@@ -506,6 +544,17 @@ class Terminal {
           this.input.value = '';
           this.scrollToBottom();
           return;
+        }
+      }
+
+      // Auto-complete single match on Enter (mobile-friendly, no Tab key needed)
+      const partial = this.input.value.trim();
+      if (partial) {
+        const matches = this.commandHistory.filter(cmd => cmd.startsWith(partial.toLowerCase()));
+        if (matches.length === 1 && matches[0] !== partial) {
+          this.input.value = matches[0];
+          this.input.style.boxShadow = '0 0 8px var(--neon-cyan)';
+          setTimeout(() => { this.input.style.boxShadow = ''; }, 250);
         }
       }
 
@@ -763,15 +812,15 @@ class Terminal {
     overlay.innerHTML = `
       <div class="help-overlay-content">
         <button class="help-overlay-close" aria-label="Close help">&times;</button>
-        <h3 class="help-overlay-title">&#x1f507; Help</h3>
+        <h2 class="help-overlay-title">&#x1f507; Help</h2>
         <div class="help-section">
-          <h4 class="help-section-title">Commands</h4>
+          <h3 class="help-section-title">Commands</h3>
           <ul class="help-command-list">
             ${helpText.map(({ cmd, desc }) => `<li><code>${escapeHtml(cmd)}</code> — ${escapeHtml(desc)}</li>`).join('')}
           </ul>
         </div>
         <div class="help-section">
-          <h4 class="help-section-title">Shortcuts</h4>
+          <h3 class="help-section-title">Shortcuts</h3>
           <ul class="help-shortcut-list">
             ${shortcuts.map(({ key, desc }) => `<li><kbd>${escapeHtml(key)}</kbd> — ${escapeHtml(desc)}</li>`).join('')}
           </ul>

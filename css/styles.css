@@ -1026,6 +1026,7 @@ body.theme-retro .terminal-footer {
   .pe-modal-close,
   .wp-modal-close,
   .terminal-input,
+  .terminal-help-btn,
   .ct-submit,
   .theme-toggle-btn {
     min-height: 44px;
@@ -1192,6 +1193,7 @@ body.theme-retro .terminal-footer {
   z-index: 9999;
   overflow: hidden;
   animation: palette-fade-in 0.2s ease-out;
+  overscroll-behavior: contain;
 }
 
 @keyframes palette-fade-in {
@@ -1324,6 +1326,7 @@ body.theme-retro .command-palette {
   justify-content: center;
   padding: 1rem;
   animation: help-overlay-in 0.2s ease-out;
+  overscroll-behavior: contain;
 }
 
 @keyframes help-overlay-in {
@@ -2005,9 +2008,9 @@ body.theme-retro .autocomplete-item .ac-highlight {
 /* Mobile: larger help button for touch */
 @media (max-width: 768px) {
   .terminal-help-btn {
-    width: 34px;
-    height: 34px;
-    font-size: 1rem;
+    width: 44px;
+    height: 44px;
+    font-size: 1.15rem;
     margin-left: 0.5rem;
   }
 }
