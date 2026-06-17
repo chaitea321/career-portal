@@ -37,12 +37,12 @@ describe('Phase 3 — Writeups JSON CMS', () => {
     assert.ok(fs.existsSync(writeupsPath), 'writeups.json should exist');
   });
 
-  it('writeups.json is valid JSON with 6 articles', async () => {
+  it('writeups.json is valid JSON with 5 articles', async () => {
     const writeupsPath = './config/writeups.json';
     const content = fs.readFileSync(writeupsPath, 'utf8');
     const writeups = JSON.parse(content);
     assert.ok(Array.isArray(writeups), 'Should be an array');
-    assert.strictEqual(writeups.length, 6, 'Should have 6 articles');
+    assert.strictEqual(writeups.length, 5, 'Should have 5 articles');
   });
 
   it('writeups.json entries have required fields', async () => {

@@ -579,8 +579,7 @@
         retroIcon.style.display = isRetro ? 'inline' : 'none';
       }
     }
-  </script>
-  <script>
+
     // === WRITEUPS DATA (loaded from JSON config, fallback to defaults) ===
 
     const DEFAULT_WRITEUPS = [
@@ -703,8 +702,8 @@
         return;
       }
 
-      grid.innerHTML = filtered.map((w, i) => `
-        <div class="wp-card" data-index="${i}" tabindex="0" role="button" aria-label="Read article: ${escapeHtml(w.title)}">
+      grid.innerHTML = filtered.map((w) => `
+        <div class="wp-card" data-index="${WRITEUPS.indexOf(w)}" tabindex="0" role="button" aria-label="Read article: ${escapeHtml(w.title)}">
           <div class="wp-card-top">
             <span class="wp-card-title">${escapeHtml(w.title)}</span>
             <span class="wp-card-category">${escapeHtml(w.category.toUpperCase())}</span>
@@ -782,14 +781,12 @@
       renderWriteups();
     });
 
-    // Online status handled by pwa.js globally
-
     // Theme persistence
     if (localStorage.getItem('portfolio-theme') === 'retro') {
       document.body.classList.add('theme-retro');
     }
 
-    renderWriteups();
+    loadWriteups().then(() => renderWriteups());
   </script>
 </body>
 </html>
