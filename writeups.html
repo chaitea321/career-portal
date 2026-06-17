@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Eugene Vincent | Writeups</title>
-  <meta name="description" content="Technical writeups on Kubernetes, DevOps, AI, and cloud-native architectures.">
-  <meta name="keywords" content="writeups, blog, kubernetes, devops, ai, cloud, tutorials">
+  <meta name="description" content="FAANG-quality engineering deep-dives on Kubernetes, service mesh, serverless, GitOps, and PWA architecture — one writeup per project.">
+  <meta name="keywords" content="writeups, project deep-dives, kubernetes, istio, devops, gitops, serverless, azure, pwa, cloud-native">
   <meta property="og:title" content="Eugene Vincent | Writeups">
-  <meta property="og:description" content="Technical writeups on Kubernetes, DevOps, AI, and cloud-native architectures.">
+  <meta property="og:description" content="FAANG-quality engineering deep-dives on Kubernetes, service mesh, serverless, GitOps, and PWA architecture — one writeup per project.">
   <meta property="og:image" content="/icons/icon-96.png">
   <link rel="icon" type="image/png" sizes="96x96" href="/icons/icon-96.png">
   <link rel="stylesheet" href="css/styles.css">
@@ -449,12 +449,12 @@
         <span class="traffic-light red" aria-hidden="true"></span>
         <span class="traffic-light yellow" aria-hidden="true"></span>
         <span class="traffic-light green" aria-hidden="true"></span>
-        <span class="title-text">eugene@homelab:~/writeups — Technical Articles</span>
+        <span class="title-text">eugene@homelab:~/writeups — Project Deep-Dives</span>
       </div>
       <div class="terminal-body" style="flex:1;display:flex;flex-direction:column;">
         <div class="wp-wrapper">
           <div class="wp-header">
-            <h2>&#x1f4dd; <span>Writeups</span></h2>
+            <h2>&#x1f4dd; <span>Project Deep-Dives</span></h2>
             <nav class="wp-nav">
               <a href="/">⌂ Terminal</a>
               <a href="/project-explorer">📂 Projects</a>
@@ -468,13 +468,12 @@
               <button class="wp-filter-btn active" data-filter="">All</button>
               <button class="wp-filter-btn" data-filter="kubernetes">☁️ Kubernetes</button>
               <button class="wp-filter-btn" data-filter="devops">⚙️ DevOps</button>
-              <button class="wp-filter-btn" data-filter="ai">🤖 AI/ML</button>
               <button class="wp-filter-btn" data-filter="cloud">💰 Cloud</button>
             </div>
             <input type="text" class="wp-search" id="wp-search" placeholder="Search articles..." autocomplete="off">
           </div>
 
-          <div class="wp-grid" id="wp-grid" role="list" aria-label="Technical writeups"></div>
+          <div class="wp-grid" id="wp-grid" role="list" aria-label="Project deep-dive writeups"></div>
         </div>
       </div>
     </div>
@@ -498,145 +497,9 @@
   <script type="module">
     import { initMobileNav } from '/js/mobile-nav.js';
     import { escapeHtml } from '/js/utils/helpers.js';
+    import { WRITEUPS } from '/js/writeups-data.js';
 
     initMobileNav();
-  </script>
-  <script>
-    // === DATA ===
-    const WRITEUPS = [
-      {
-        title: 'Reducing Kubernetes Monitoring Costs by 60% with k3s and Istio',
-        category: 'kubernetes',
-        excerpt: 'How I built a cost-optimized observability stack on a $5/month k3s cluster, achieving full metrics, traces, and logs without the serverless price tag.',
-        tags: ['kubernetes', 'istio', 'cost-optimization', 'prometheus'],
-        date: '2026-05-15',
-        readTime: '8 min read',
-        content: `<p>Most Kubernetes monitoring guides recommend managed cloud solutions — and they work great until you see the bill. After deploying MeshWatch, I reduced monitoring costs by <strong>60% compared to serverless alternatives</strong>.</p>
-
-<p>The key insight: <strong>you don't need a full EKS/AKS cluster for homelab-scale observability</strong>. A single k3s node (1 CPU, 2GB RAM) running Istio service mesh handles all my microservices with zero-downtime canary deployments.</p>
-
-<p><strong>The stack:</strong></p>
-<ul>
-<li><strong>Istio</strong> — Service mesh with mTLS, traffic splitting, and circuit breaking</li>
-<li><strong>Prometheus + Grafana</strong> — Metrics collection and 20-panel dashboards</li>
-<li><strong>Loki</strong> — Log aggregation with 7-day retention</li>
-<li><strong>Tempo</strong> — Distributed tracing for request lifecycle visibility</li>
-<li><strong>Ollama Phi-3</strong> — AI-powered incident analysis via Tailscale tunnel</li>
-</ul>
-
-<p>Total monthly cost: <strong>$5.12</strong> vs $12.80 for a comparable serverless setup. That's $92.16 in annual savings from a homelab that fits on my HP laptop desk.</p>`
-      },
-      {
-        title: 'Building a Discord Bot for Minecraft Server Management with Slash Commands',
-        category: 'devops',
-        excerpt: 'A full-stack Discord.py bot with 10 slash commands for real-time Minecraft server control, monitoring, and automated alerting via RCON protocol.',
-        tags: ['discord', 'minecraft', 'automation', 'rcon'],
-        date: '2026-04-22',
-        readTime: '6 min read',
-        content: `<p>Managing a Minecraft server from the terminal is fine. Managing it <strong>from Discord</strong> with slash commands and real-time metrics is better. Here's how I built a full-stack bot that bridges my Minecraft server with my monitoring pipeline.</p>
-
-<p><strong>The architecture:</strong></p>
-<ul>
-<li><strong>Discord.py</strong> — Bot framework with 10 slash commands (/status, /players, /tps, /tps-graph, /restart, /whitelist, /ban, /tpo, /gamerules, /help)</li>
-<li><strong>RCON Protocol</strong> — Direct server control for restarts, player management, and config changes</li>
-<li><strong>JMX Exporter</strong> — Real-time Java metrics (TPS, heap usage, GC pauses) exposed to Prometheus</li>
-<li><strong>Prometheus + Grafana</strong> — Dashboards that the bot queries for /status output</li>
-</ul>
-
-<p>The bot runs as a sidecar in the k3s cluster alongside the Minecraft server. When TPS drops below 18 or heap usage exceeds 400MB, it fires an alert to Discord via webhook — no Grafana dashboard needed.</p>`
-      },
-      {
-        title: 'Integrating Ollama Phi-3 for Automated Incident Analysis in Kubernetes',
-        category: 'ai',
-        excerpt: 'Using local LLM inference via Tailscale to automatically analyze Prometheus alerts, suggest root causes, and generate remediation steps — all on a $5/month cluster.',
-        tags: ['ollama', 'llm', 'incident-response', 'ai-ops'],
-        date: '2026-06-01',
-        readTime: '10 min read',
-        content: `<p>When alerts fire at 3am, you don't want to wait for a human to debug. What if your monitoring stack could <strong>analyze the alert and suggest root causes</strong> before you even open Grafana?</p>
-
-<p>I deployed <strong>Ollama Phi-3</strong> on my k3s cluster and connected it via Tailscale (outbound-only tunnel, no firewall holes). When Prometheus detects an anomaly, the incident pipeline:</p>
-
-<ol>
-<li>Captures relevant metrics from the last 5 minutes</li>
-<li>Queries Grafana for the affected dashboard panels</li>
-<li>Sends structured data to Ollama Phi-3 via a Tailscale tunnel (100.65.214.138:11434)</li>
-<li>Returns a natural-language root cause analysis with remediation steps</li>
-</ol>
-
-<p><strong>Why local LLMs?</strong></p>
-<ul>
-<li><strong>Cost:</strong> $0 per query vs $0.002/query for cloud APIs (adds up fast with 50+ alerts/day)</li>
-<li><strong>Privacy:</strong> No metrics data leaves your network — everything stays on the Tailscale mesh</li>
-<li><strong>Latency:</strong> ~2s response time on a 1-thread Phi-3 model vs 5-10s for cloud APIs</li>
-</ul>
-
-<p>The system is still in beta, but it has already caught a memory leak in one of my Istio sidecars that Prometheus alone would have missed.</p>`
-      },
-      {
-        title: 'Zero-Downtime Deployments with ArgoCD and Flagger on k3s',
-        category: 'devops',
-        excerpt: 'Implementing canary deployments with automated rollback using Flagger's traffic splitting, Prometheus-based SLO checks, and Istio gateways.',
-        tags: ['argocd', 'flagger', 'canary', 'zero-downtime'],
-        date: '2026-03-10',
-        readTime: '7 min read',
-        content: `<p>Deploying to production without downtime isn't about having the biggest cluster — it's about having the <strong>right deployment strategy</strong>. After months of trial and error on my k3s homelab, I've settled on a reliable canary deployment pipeline.</p>
-
-<p><strong>The pipeline:</strong></p>
-<ul>
-<li><strong>ArgoCD</strong> — GitOps-driven deployments using the App of Apps pattern across multiple namespaces</li>
-<li><strong>Flagger</strong> — Canary analysis with traffic splitting (10% → 25% → 50% → 100%)</li>
-<li><strong>Prometheus SLO checks</strong> — Automatic rollback if error rate exceeds 0.5% during canary</li>
-<li><strong>Istio gateways</strong> — Traffic splitting at the service mesh level</li>
-</ul>
-
-<p>The result: <strong>zero downtime deployments</strong> with automated rollback on failure. If a canary fails the SLO checks, Flagger automatically reverts traffic to the stable version within 30 seconds.</p>`
-      },
-      {
-        title: 'Cloudflare Pages Deployment Pipeline for Static Portfolio Sites',
-        category: 'cloud',
-        excerpt: 'Setting up automated CI/CD with GitHub Actions, Cloudflare Pages, custom domain, SSL, and PWA support — all on a free tier.',
-        tags: ['cloudflare', 'github-actions', 'pwa', 'ci-cd'],
-        date: '2026-02-18',
-        readTime: '5 min read',
-        content: `<p>After evaluating Azure Blob Storage, Netlify, and Vercel for hosting this portfolio, I chose <strong>Cloudflare Pages</strong> for its free tier, automatic SSL, and built-in CDN.</p>
-
-<p><strong>The deployment pipeline:</strong></p>
-<ul>
-<li><strong>GitHub Actions</strong> — <code>pages.yml</code> workflow triggers on push to master</li>
-<li><strong>cloudflare/pages-action@v1</strong> — Builds and deploys the static site</li>
-<li><strong>Cloudflare DNS</strong> — Custom domain (chai-homelab.com) with automatic SSL via Let's Encrypt</li>
-<li><strong>PWA Service Worker</strong> — Offline caching with v6 cache strategy</li>
-<li><strong>_headers</strong> — Cache-Control: 31536000s for static assets, 600s for config files</li>
-</ul>
-
-<p>Total cost: <strong>$0.50/month</strong> (Azure Blob for API gateway). The portfolio itself is completely free to host on Cloudflare Pages with unlimited bandwidth.</p>`
-      },
-      {
-        title: 'Istio mTLS Service Mesh Security: A Practical Guide for Homelabs',
-        category: 'kubernetes',
-        excerpt: 'Implementing mutual TLS authentication between microservices using Istio's built-in certificate management, with practical lessons from a production-grade homelab.',
-        tags: ['istio', 'mtls', 'security', 'service-mesh'],
-        date: '2026-01-25',
-        readTime: '9 min read',
-        content: `<p>Plaintext HTTP between services in a Kubernetes cluster is the easiest attack vector you're not protecting against. <strong>mTLS (mutual TLS)</strong> solves this by requiring every service to present a valid certificate before accepting connections.</p>
-
-<p>Istio makes mTLS straightforward with its built-in certificate management:</p>
-
-<ol>
-<li><strong>Trust domain</strong> — Define which CA certificates are trusted for incoming connections</li>
-<li><strong>Secrets domain</strong> — Configure automatic certificate generation and rotation</li>
-<li><strong>TLS policy</strong> — Set STRICT mode to enforce mTLS on all service-to-service communication</li>
-</ol>
-
-<p><strong>Key lessons from production:</strong></p>
-<ul>
-<li>Rotate certificates every 30 days (Istio handles this automatically)</li>
-<li>Use separate trust domains for internal vs. external services</li>
-<li>Monitor certificate expiry with Grafana alerts — expired certs cause cascade failures</li>
-<li>Test mTLS enforcement by temporarily removing a service's certificate</li>
-</ul>`
-      }
-    ];
 
     const grid = document.getElementById('wp-grid');
     const searchInput = document.getElementById('wp-search');
